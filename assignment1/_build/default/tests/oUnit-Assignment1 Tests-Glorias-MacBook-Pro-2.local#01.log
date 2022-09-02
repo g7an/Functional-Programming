@@ -1,0 +1,18 @@
+2022-09-02T00:47:23+00:00 Glorias-MacBook-Pro-2.local#01 I: Start test Assignment1 Tests:0:Part 1 Section 1:0:Summate.
+2022-09-02T00:47:23+00:00 Glorias-MacBook-Pro-2.local#01 I: Test Assignment1 Tests:0:Part 1 Section 1:0:Summate is successful.
+2022-09-02T00:47:23+00:00 Glorias-MacBook-Pro-2.local#01 I: End test Assignment1 Tests:0:Part 1 Section 1:0:Summate.
+2022-09-02T00:47:23+00:00 Glorias-MacBook-Pro-2.local#01 I: Start test Assignment1 Tests:0:Part 1 Section 1:2:Fibonacci.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Test Assignment1 Tests:0:Part 1 Section 1:2:Fibonacci is successful.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: End test Assignment1 Tests:0:Part 1 Section 1:2:Fibonacci.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Start test Assignment1 Tests:1:Part 1 Section 2:1:Iota2.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Test Assignment1 Tests:1:Part 1 Section 2:1:Iota2 is successful.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: End test Assignment1 Tests:1:Part 1 Section 2:1:Iota2.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Start test Assignment1 Tests:1:Part 1 Section 2:3:Insert String.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Test Assignment1 Tests:1:Part 1 Section 2:3:Insert String is successful.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: End test Assignment1 Tests:1:Part 1 Section 2:3:Insert String.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Start test Assignment1 Tests:1:Part 1 Section 2:5:Insertion Sort.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Test Assignment1 Tests:1:Part 1 Section 2:5:Insertion Sort is successful.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: End test Assignment1 Tests:1:Part 1 Section 2:5:Insertion Sort.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Start test Assignment1 Tests:1:Part 1 Section 2:7:Max Sort.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: Test Assignment1 Tests:1:Part 1 Section 2:7:Max Sort is successful.
+2022-09-02T00:47:24+00:00 Glorias-MacBook-Pro-2.local#01 I: End test Assignment1 Tests:1:Part 1 Section 2:7:Max Sort.

@@ -1,0 +1,124 @@
+# dune test
+# OCAMLPARAM: unset
+# Shared cache: disabled
+# Workspace root: "/Users/gloriatan/Documents/JHU course 22 FALL/functional
+# programming/assignment/assignment1"
+# Auto-detected concurrency: 10
+$ /Users/gloriatan/.opam/4.13.1/bin/ocamlc.opt -config > /var/folders/3h/yyfk47h55612hn1t58lb31gh0000gn/T/dune_8ac1bf_output
+# Dune context:
+#  { name = "default"
+#  ; kind = "default"
+#  ; profile = Dev
+#  ; merlin = true
+#  ; for_host = None
+#  ; fdo_target_exe = None
+#  ; build_dir = "default"
+#  ; toplevel_path = Some External "/Users/gloriatan/.opam/4.13.1/lib/toplevel"
+#  ; ocaml_bin = External "/Users/gloriatan/.opam/4.13.1/bin"
+#  ; ocaml = Ok External "/Users/gloriatan/.opam/4.13.1/bin/ocaml"
+#  ; ocamlc = External "/Users/gloriatan/.opam/4.13.1/bin/ocamlc.opt"
+#  ; ocamlopt = Ok External "/Users/gloriatan/.opam/4.13.1/bin/ocamlopt.opt"
+#  ; ocamldep = Ok External "/Users/gloriatan/.opam/4.13.1/bin/ocamldep.opt"
+#  ; ocamlmklib =
+#      Ok External "/Users/gloriatan/.opam/4.13.1/bin/ocamlmklib.opt"
+#  ; env =
+#      map
+#        { "DUNE_OCAML_HARDCODED" : "/Users/gloriatan/.opam/4.13.1/lib"
+#        ; "DUNE_OCAML_STDLIB" : "/Users/gloriatan/.opam/4.13.1/lib/ocaml"
+#        ; "DUNE_SOURCEROOT" :
+#            "/Users/gloriatan/Documents/JHU course 22 FALL/functional programming/assignment/assignment1"
+#        ; "INSIDE_DUNE" :
+#            "/Users/gloriatan/Documents/JHU course 22 FALL/functional programming/assignment/assignment1/_build/default"
+#        ; "OCAMLFIND_IGNORE_DUPS_IN" :
+#            "/Users/gloriatan/Documents/JHU course 22 FALL/functional programming/assignment/assignment1/_build/install/default/lib"
+#        ; "OCAMLPATH" :
+#            "/Users/gloriatan/Documents/JHU course 22 FALL/functional programming/assignment/assignment1/_build/install/default/lib"
+#        ; "OCAMLTOP_INCLUDE_PATH" :
+#            "/Users/gloriatan/Documents/JHU course 22 FALL/functional programming/assignment/assignment1/_build/install/default/lib/toplevel"
+#        ; "OCAML_COLOR" : "always"
+#        ; "OPAMCOLOR" : "always"
+#        }
+#  ; findlib_paths = [ External "/Users/gloriatan/.opam/4.13.1/lib" ]
+#  ; arch_sixtyfour = true
+#  ; natdynlink_supported = true
+#  ; supports_shared_libraries = true
+#  ; ocaml_config =
+#      { version = "4.13.1"
+#      ; standard_library_default = "/Users/gloriatan/.opam/4.13.1/lib/ocaml"
+#      ; standard_library = "/Users/gloriatan/.opam/4.13.1/lib/ocaml"
+#      ; standard_runtime = "the_standard_runtime_variable_was_deleted"
+#      ; ccomp_type = "cc"
+#      ; c_compiler = "cc"
+#      ; ocamlc_cflags =
+#          [ "-O2"; "-fno-strict-aliasing"; "-fwrapv"; "-pthread" ]
+#      ; ocamlc_cppflags = [ "-D_FILE_OFFSET_BITS=64" ]
+#      ; ocamlopt_cflags =
+#          [ "-O2"; "-fno-strict-aliasing"; "-fwrapv"; "-pthread" ]
+#      ; ocamlopt_cppflags = [ "-D_FILE_OFFSET_BITS=64" ]
+#      ; bytecomp_c_compiler =
+#          [ "cc"
+#          ; "-O2"
+#          ; "-fno-strict-aliasing"
+#          ; "-fwrapv"
+#          ; "-pthread"
+#          ; "-D_FILE_OFFSET_BITS=64"
+#          ]
+#      ; bytecomp_c_libraries = [ "-lm"; "-lpthread" ]
+#      ; native_c_compiler =
+#          [ "cc"
+#          ; "-O2"
+#          ; "-fno-strict-aliasing"
+#          ; "-fwrapv"
+#          ; "-pthread"
+#          ; "-D_FILE_OFFSET_BITS=64"
+#          ]
+#      ; native_c_libraries = [ "-lm" ]
+#      ; native_pack_linker = [ "ld"; "-r"; "-o" ]
+#      ; cc_profile = []
+#      ; architecture = "arm64"
+#      ; model = "default"
+#      ; int_size = 63
+#      ; word_size = 64
+#      ; system = "macosx"
+#      ; asm = [ "cc"; "-c"; "-Wno-trigraphs" ]
+#      ; asm_cfi_supported = true
+#      ; with_frame_pointers = false
+#      ; ext_exe = ""
+#      ; ext_obj = ".o"
+#      ; ext_asm = ".s"
+#      ; ext_lib = ".a"
+#      ; ext_dll = ".so"
+#      ; os_type = "Unix"
+#      ; default_executable_name = "a.out"
+#      ; systhread_supported = true
+#      ; host = "aarch64-apple-darwin21.2.0"
+#      ; target = "aarch64-apple-darwin21.2.0"
+#      ; profiling = false
+#      ; flambda = false
+#      ; spacetime = false
+#      ; safe_string = true
+#      ; exec_magic_number = "Caml1999X030"
+#      ; cmi_magic_number = "Caml1999I030"
+#      ; cmo_magic_number = "Caml1999O030"
+#      ; cma_magic_number = "Caml1999A030"
+#      ; cmx_magic_number = "Caml1999Y030"
+#      ; cmxa_magic_number = "Caml1999Z030"
+#      ; ast_impl_magic_number = "Caml1999M030"
+#      ; ast_intf_magic_number = "Caml1999N030"
+#      ; cmxs_magic_number = "Caml1999D030"
+#      ; cmt_magic_number = "Caml1999T030"
+#      ; natdynlink_supported = true
+#      ; supports_shared_libraries = true
+#      ; windows_unicode = false
+#      }
+#  }
+$ (cd _build/default && /Users/gloriatan/.opam/4.13.1/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I src/.submission.objs/byte -I /Users/gloriatan/.opam/4.13.1/lib/base -I /Users/gloriatan/.opam/4.13.1/lib/base/base_internalhash_types -I /Users/gloriatan/.opam/4.13.1/lib/base/caml -I /Users/gloriatan/.opam/4.13.1/lib/base/md5 -I /Users/gloriatan/.opam/4.13.1/lib/base/shadow_stdlib -I /Users/gloriatan/.opam/4.13.1/lib/base_bigstring -I /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck -I /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck/ppx_quickcheck/runtime -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot/shape -I /Users/gloriatan/.opam/4.13.1/lib/core -I /Users/gloriatan/.opam/4.13.1/lib/core/base_for_tests -I /Users/gloriatan/.opam/4.13.1/lib/core/validate -I /Users/gloriatan/.opam/4.13.1/lib/fieldslib -I /Users/gloriatan/.opam/4.13.1/lib/int_repr -I /Users/gloriatan/.opam/4.13.1/lib/jane-street-headers -I /Users/gloriatan/.opam/4.13.1/lib/parsexp -I /Users/gloriatan/.opam/4.13.1/lib/ppx_assert/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_bench/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_compare/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_enumerate/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/collector -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/common -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config_types -I /Users/gloriatan/.opam/4.13.1/lib/ppx_hash/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_here/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/config -I /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_log/types -I /Users/gloriatan/.opam/4.13.1/lib/ppx_module_timer/runtime -I /Users/gloriatan/.opam/4.13.1/lib/ppx_sexp_conv/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/sexplib -I /Users/gloriatan/.opam/4.13.1/lib/sexplib0 -I /Users/gloriatan/.opam/4.13.1/lib/splittable_random -I /Users/gloriatan/.opam/4.13.1/lib/stdio -I /Users/gloriatan/.opam/4.13.1/lib/time_now -I /Users/gloriatan/.opam/4.13.1/lib/typerep -I /Users/gloriatan/.opam/4.13.1/lib/variantslib -no-alias-deps -opaque -o src/.submission.objs/byte/submission.cmo -c -impl src/submission.ml)
+$ (cd _build/default && /Users/gloriatan/.opam/4.13.1/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I tests/.tests.eobjs/byte -I /Users/gloriatan/.opam/4.13.1/lib/base -I /Users/gloriatan/.opam/4.13.1/lib/base/base_internalhash_types -I /Users/gloriatan/.opam/4.13.1/lib/base/caml -I /Users/gloriatan/.opam/4.13.1/lib/base/md5 -I /Users/gloriatan/.opam/4.13.1/lib/base/shadow_stdlib -I /Users/gloriatan/.opam/4.13.1/lib/base_bigstring -I /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck -I /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck/ppx_quickcheck/runtime -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot/shape -I /Users/gloriatan/.opam/4.13.1/lib/core -I /Users/gloriatan/.opam/4.13.1/lib/core/base_for_tests -I /Users/gloriatan/.opam/4.13.1/lib/core/validate -I /Users/gloriatan/.opam/4.13.1/lib/fieldslib -I /Users/gloriatan/.opam/4.13.1/lib/int_repr -I /Users/gloriatan/.opam/4.13.1/lib/jane-street-headers -I /Users/gloriatan/.opam/4.13.1/lib/ounit2 -I /Users/gloriatan/.opam/4.13.1/lib/ounit2/advanced -I /Users/gloriatan/.opam/4.13.1/lib/parsexp -I /Users/gloriatan/.opam/4.13.1/lib/ppx_assert/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_bench/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_compare/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_enumerate/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/collector -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/common -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config_types -I /Users/gloriatan/.opam/4.13.1/lib/ppx_hash/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_here/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/config -I /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_log/types -I /Users/gloriatan/.opam/4.13.1/lib/ppx_module_timer/runtime -I /Users/gloriatan/.opam/4.13.1/lib/ppx_sexp_conv/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/seq -I /Users/gloriatan/.opam/4.13.1/lib/sexplib -I /Users/gloriatan/.opam/4.13.1/lib/sexplib0 -I /Users/gloriatan/.opam/4.13.1/lib/splittable_random -I /Users/gloriatan/.opam/4.13.1/lib/stdio -I /Users/gloriatan/.opam/4.13.1/lib/stdlib-shims -I /Users/gloriatan/.opam/4.13.1/lib/time_now -I /Users/gloriatan/.opam/4.13.1/lib/typerep -I /Users/gloriatan/.opam/4.13.1/lib/variantslib -I src/.submission.objs/byte -no-alias-deps -opaque -o tests/.tests.eobjs/byte/dune__exe__Tests.cmi -c -intf tests/tests.mli)
+$ (cd _build/default && /Users/gloriatan/.opam/4.13.1/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I src/.submission.objs/byte -I src/.submission.objs/native -I /Users/gloriatan/.opam/4.13.1/lib/base -I /Users/gloriatan/.opam/4.13.1/lib/base/base_internalhash_types -I /Users/gloriatan/.opam/4.13.1/lib/base/caml -I /Users/gloriatan/.opam/4.13.1/lib/base/md5 -I /Users/gloriatan/.opam/4.13.1/lib/base/shadow_stdlib -I /Users/gloriatan/.opam/4.13.1/lib/base_bigstring -I /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck -I /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck/ppx_quickcheck/runtime -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot/shape -I /Users/gloriatan/.opam/4.13.1/lib/core -I /Users/gloriatan/.opam/4.13.1/lib/core/base_for_tests -I /Users/gloriatan/.opam/4.13.1/lib/core/validate -I /Users/gloriatan/.opam/4.13.1/lib/fieldslib -I /Users/gloriatan/.opam/4.13.1/lib/int_repr -I /Users/gloriatan/.opam/4.13.1/lib/jane-street-headers -I /Users/gloriatan/.opam/4.13.1/lib/parsexp -I /Users/gloriatan/.opam/4.13.1/lib/ppx_assert/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_bench/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_compare/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_enumerate/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/collector -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/common -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config_types -I /Users/gloriatan/.opam/4.13.1/lib/ppx_hash/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_here/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/config -I /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_log/types -I /Users/gloriatan/.opam/4.13.1/lib/ppx_module_timer/runtime -I /Users/gloriatan/.opam/4.13.1/lib/ppx_sexp_conv/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/sexplib -I /Users/gloriatan/.opam/4.13.1/lib/sexplib0 -I /Users/gloriatan/.opam/4.13.1/lib/splittable_random -I /Users/gloriatan/.opam/4.13.1/lib/stdio -I /Users/gloriatan/.opam/4.13.1/lib/time_now -I /Users/gloriatan/.opam/4.13.1/lib/typerep -I /Users/gloriatan/.opam/4.13.1/lib/variantslib -intf-suffix .ml -no-alias-deps -opaque -o src/.submission.objs/native/submission.cmx -c -impl src/submission.ml)
+$ (cd _build/default && /Users/gloriatan/.opam/4.13.1/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I tests/.tests.eobjs/byte -I tests/.tests.eobjs/native -I /Users/gloriatan/.opam/4.13.1/lib/base -I /Users/gloriatan/.opam/4.13.1/lib/base/base_internalhash_types -I /Users/gloriatan/.opam/4.13.1/lib/base/caml -I /Users/gloriatan/.opam/4.13.1/lib/base/md5 -I /Users/gloriatan/.opam/4.13.1/lib/base/shadow_stdlib -I /Users/gloriatan/.opam/4.13.1/lib/base_bigstring -I /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck -I /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck/ppx_quickcheck/runtime -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot/shape -I /Users/gloriatan/.opam/4.13.1/lib/core -I /Users/gloriatan/.opam/4.13.1/lib/core/base_for_tests -I /Users/gloriatan/.opam/4.13.1/lib/core/validate -I /Users/gloriatan/.opam/4.13.1/lib/fieldslib -I /Users/gloriatan/.opam/4.13.1/lib/int_repr -I /Users/gloriatan/.opam/4.13.1/lib/jane-street-headers -I /Users/gloriatan/.opam/4.13.1/lib/ounit2 -I /Users/gloriatan/.opam/4.13.1/lib/ounit2/advanced -I /Users/gloriatan/.opam/4.13.1/lib/parsexp -I /Users/gloriatan/.opam/4.13.1/lib/ppx_assert/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_bench/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_compare/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_enumerate/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/collector -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/common -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config_types -I /Users/gloriatan/.opam/4.13.1/lib/ppx_hash/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_here/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/config -I /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/ppx_log/types -I /Users/gloriatan/.opam/4.13.1/lib/ppx_module_timer/runtime -I /Users/gloriatan/.opam/4.13.1/lib/ppx_sexp_conv/runtime-lib -I /Users/gloriatan/.opam/4.13.1/lib/seq -I /Users/gloriatan/.opam/4.13.1/lib/sexplib -I /Users/gloriatan/.opam/4.13.1/lib/sexplib0 -I /Users/gloriatan/.opam/4.13.1/lib/splittable_random -I /Users/gloriatan/.opam/4.13.1/lib/stdio -I /Users/gloriatan/.opam/4.13.1/lib/stdlib-shims -I /Users/gloriatan/.opam/4.13.1/lib/time_now -I /Users/gloriatan/.opam/4.13.1/lib/typerep -I /Users/gloriatan/.opam/4.13.1/lib/variantslib -I src/.submission.objs/byte -I src/.submission.objs/native -intf-suffix .ml -no-alias-deps -opaque -o tests/.tests.eobjs/native/dune__exe__Tests.cmx -c -impl tests/tests.ml)
+$ (cd _build/default && /Users/gloriatan/.opam/4.13.1/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -a -o src/submission.cmxa src/.submission.objs/native/submission.cmx)
+$ (cd _build/default && /Users/gloriatan/.opam/4.13.1/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -o tests/tests.exe /Users/gloriatan/.opam/4.13.1/lib/base/base_internalhash_types/base_internalhash_types.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/base/base_internalhash_types /Users/gloriatan/.opam/4.13.1/lib/base/caml/caml.cmxa /Users/gloriatan/.opam/4.13.1/lib/sexplib0/sexplib0.cmxa /Users/gloriatan/.opam/4.13.1/lib/base/shadow_stdlib/shadow_stdlib.cmxa /Users/gloriatan/.opam/4.13.1/lib/base/base.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/base /Users/gloriatan/.opam/4.13.1/lib/ppx_sexp_conv/runtime-lib/ppx_sexp_conv_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_compare/runtime-lib/ppx_compare_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_enumerate/runtime-lib/ppx_enumerate_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_hash/runtime-lib/ppx_hash_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_here/runtime-lib/ppx_here_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_assert/runtime-lib/ppx_assert_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_bench/runtime-lib/ppx_bench_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/base/md5/md5_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ocaml/unix.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/ocaml /Users/gloriatan/.opam/4.13.1/lib/ocaml/bigarray.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/ocaml /Users/gloriatan/.opam/4.13.1/lib/fieldslib/fieldslib.cmxa /Users/gloriatan/.opam/4.13.1/lib/variantslib/variantslib.cmxa /Users/gloriatan/.opam/4.13.1/lib/bin_prot/shape/bin_shape_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/bin_prot/bin_prot.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/bin_prot /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/config/inline_test_config.cmxa /Users/gloriatan/.opam/4.13.1/lib/jane-street-headers/jane_street_headers.cmxa /Users/gloriatan/.opam/4.13.1/lib/time_now/time_now.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/time_now /Users/gloriatan/.opam/4.13.1/lib/ppx_inline_test/runtime-lib/ppx_inline_test_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/stdio/stdio.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_module_timer/runtime/ppx_module_timer_runtime.cmxa /Users/gloriatan/.opam/4.13.1/lib/typerep/typerep_lib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/common/expect_test_common.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config_types/expect_test_config_types.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/collector/expect_test_collector.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/collector /Users/gloriatan/.opam/4.13.1/lib/ppx_expect/config/expect_test_config.cmxa /Users/gloriatan/.opam/4.13.1/lib/parsexp/parsexp.cmxa /Users/gloriatan/.opam/4.13.1/lib/sexplib/sexplib.cmxa /Users/gloriatan/.opam/4.13.1/lib/ppx_log/types/ppx_log_types.cmxa /Users/gloriatan/.opam/4.13.1/lib/splittable_random/splittable_random.cmxa /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck/base_quickcheck.cmxa /Users/gloriatan/.opam/4.13.1/lib/base_quickcheck/ppx_quickcheck/runtime/ppx_quickcheck_runtime.cmxa /Users/gloriatan/.opam/4.13.1/lib/int_repr/int_repr.cmxa /Users/gloriatan/.opam/4.13.1/lib/base_bigstring/base_bigstring.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/base_bigstring /Users/gloriatan/.opam/4.13.1/lib/core/base_for_tests/base_for_tests.cmxa /Users/gloriatan/.opam/4.13.1/lib/core/validate/validate.cmxa /Users/gloriatan/.opam/4.13.1/lib/core/core.cmxa -I /Users/gloriatan/.opam/4.13.1/lib/core -I /Users/gloriatan/.opam/4.13.1/lib/ocaml /Users/gloriatan/.opam/4.13.1/lib/stdlib-shims/stdlib_shims.cmxa /Users/gloriatan/.opam/4.13.1/lib/ounit2/advanced/oUnitAdvanced.cmxa /Users/gloriatan/.opam/4.13.1/lib/ounit2/oUnit.cmxa src/submission.cmxa tests/.tests.eobjs/native/dune__exe__Tests.cmx)
+$ (cd _build/default/tests && ./tests.exe)
+> ...........
+> Ran: 11 tests in: 0.12 seconds.
+> OK
