@@ -3,7 +3,7 @@
 FPSE Assignment 1
  
 Name                  : Shuyao Tan
-List of Collaborators :
+List of Collaborators : Tingyao Li
 
 Please make a good faith effort at listing people you discussed any problems with here, as per the course academic integrity policy.  CAs/Prof need not be listed!
 
@@ -228,18 +228,37 @@ let rec max_sort (l: string list): string list =
 	These new implementations should not be explicitly recursive.	Note that the autograder is not aware if you cheated and used recursion; we will manually inspect your code and give you negative points if 
 	you used recursion.
 *)
+(*
+	Given a non-negative integer `n`, produce a list [n; n-1; ...; 2; 1].
+*)
+
+(* generate a list of integers from 1 to n *)
+
+
 
 let iota1' (n: int): int list = 
-	unimplemented ()
+	if n = 0 then [] else List.rev (List.range 1 (n+1));;
 
+(*
+	Given a non-negative integer `n`, produce a list [1; 2; ...; n-1; n],	without taking O(n^2) time.
+*)
 let iota2' (n: int): int list =
-	unimplemented ()
+	if n = 0 then [] else List.range 1 (n+1);;
 
+(*
+	Given a positive integer `n`, produce the list of integers in the range (0, n] which it is divisible by, in ascending order.
+*)
 let factors' (n: int): int list =
-	unimplemented ()
+	List.filter (iota2' n) ~f:(fun x -> n mod x = 0);;
 
+(*
+	Given a string and an ordered list of strings, insert the string into the list so	that the list remains ordered.  Return the list with the string inserted.
+
+	Note this is an example of a *functional data structure*, instead of mutating	you return a fresh copy with the element added.
+*)
 let insert_string' (s: string) (l: string list): string list =
-	unimplemented ()
+	List.filter l ~f:(fun x -> String.(x<=s)) @ [s] @ List.filter l ~f:(fun x -> String.(x>s));;
+
 
 (*
 Part II Section 2: Checking validity of a Towers game solution
@@ -269,49 +288,75 @@ If you are unsure on what the requirements of the functions are, look at the tes
 The first task is to determine if a list of lists of integers is "square", i.e. each list is the same length and there are the same number of lists as there are elements in any of the lists. If it is, return Ok(the dimension of the array).  If not, return Error "not square". *)
 
 let square_size (grid: int list list) : (int, string) result =
-	unimplemented ()
+		if List.length grid > 0 && List.for_all grid ~f:(fun x -> List.length x = List.length grid) then Ok (List.length grid) else Error "not square";;
 
 (* Given a list of integers of length n, determine if the list has exactly one occurrence
 	 of each number in 1 .. n in it. Return false if not *)	
 let elements_span_range (l : int list) : bool = 
-	unimplemented ()
+	not (List.contains_dup l ~compare:Int.compare);;
 
 (* Check to see if a towers grid is well-formed, namely
 	 1) it is square as per above,
    2) it is at least 1x1 in size (no 0x0 degenerates are allowed)
    2) each row and column spans the range as per above *)
 let well_formed_grid (grid : int list list) : bool = 
-	unimplemented ()
+	match square_size grid with
+		| Error _ -> false
+		| Ok n -> if List.length grid = 0 then false else (List.for_all grid ~f:(fun x -> elements_span_range x) 
+							&& List.for_all (List.transpose_exn grid) ~f:(fun x -> elements_span_range x));;
+
 
 (* The next six auxiliary functions should only be called on well-formed grids, or rows from well-formed
 	 grids, and so you don't need to deal with ill-formed cases there such as 0x0 or non-spanning grid rows.  *)	
 
 (* The lowest level of the validity check for towers requires finding the number of local maxima going down a given row of the grid (i.e. down a list of integers).  Define a function local_max_count to find that value.  *)
 
-let local_max_count (row : int list) : int =  
-	unimplemented ()
+let iter_to_ith_element (row : int list) (i : int) : int list = 
+	List.filteri row ~f:(fun j x -> j <= i);;
 
-(* Now we need to apply the above function to each row/column around the grid.  There are many reasonable ways to solve that task, but here we ask you to first write a function verify_left_clues to check the "left side grid" clues only are correct.  For this function the `edge_clues` list is only the left-side clues. *)
+	(* find the max value in the list *)
+let max_value (row : int list) : int = 
+	List.fold row ~init:0 ~f:(fun x y -> if x > y then x else y);;
+
+let local_max_count (row : int list) : int =  
+(* compare if the value of item is larger than the previous maximum value *)
+	List.counti row ~f:(fun i x -> if i = 0 then true else x > (max_value (iter_to_ith_element row (i-1))));;
+	
+
+(* Now we need to apply the above function to each row/column around the grid.  
+	 There are many reasonable ways to solve that task, 
+	 but here we ask you to first write a function verify_left_clues to check the "left side grid" clues only are correct.  
+	 For this function the `edge_clues` list is only the left-side clues. *)
 
 let verify_left_clues (grid : int list list) (edge_clues : int list) : bool =
-	unimplemented ()
+	List.for_all2_exn grid edge_clues ~f:(fun x y -> local_max_count x = y);;
 
 (* In order to check the clues on all four edges, we will rotate the grid counter-clockwise and call the above function at each rotation. 
 There many ways we can rotate our grid.  Here we suggest using a combination of transpose (like for a matrix: flip rows and columns), and reflect.  Note you can assume the grid is well-formed.  *)	
 let transpose (grid : int list list) : int list list = 
-	unimplemented ()
+	List.transpose_exn grid;;
 
 let reflect_vertical_axis (grid : int list list) : int list list =
-	unimplemented ()
-
+	List.map grid ~f:(fun x -> List.rev x);;
 
 (* Now it should not be difficult to define a function to rotate the grid counterclockwise *)
 let rotate_ccw (grid : int list list) : int list list = 
-	unimplemented ()
+	transpose (reflect_vertical_axis grid);;
 
-(* Finally, write a function verify_towers_solution which given a grid and the clues all around the grid, verifies that the solution is correct with respect to the clues: the grid is well-formed as per above, and the clues are all satisfied by the solution.  
-The clues are a list of lists, the first element of the list is the edge_clues for the original board orientation, and the subsequent lists correspond to clues for successive rotations of the grid. 
-If either the grid is ill-formed or the clues are not all satisfied, return false.  *)
+(* 
+	Finally, write a function verify_towers_solution which given a grid and the clues all around the grid, 
+	verifies that the solution is correct with respect to the clues: the grid is well-formed as per above, 
+	and the clues are all satisfied by the solution.  
+	The clues are a list of lists, the first element of the list is the edge_clues for the original board orientation, 
+	and the subsequent lists correspond to clues for successive rotations of the grid. 
+	If either the grid is ill-formed or the clues are not all satisfied, return false. 
+*)
+
+(* get the new grid of each rotation *)
+let rec rotate_ccw_n (grid : int list list) (n : int) : int list list = 
+	if n = 0 then grid else rotate_ccw_n (rotate_ccw grid) (n-1);;
 
 let verify_towers_solution  (grid : int list list) (four_edge_clues : int list list) : bool = 
-  unimplemented ()
+	if well_formed_grid grid then
+		List.for_all2_exn four_edge_clues (List.init 4 ~f:(fun index -> rotate_ccw_n grid index)) ~f:(fun x y -> verify_left_clues y x)
+	else false;;

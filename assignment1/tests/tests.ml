@@ -84,10 +84,37 @@ let part1_section2_tests =
        ]
 
 (* Part II Section 1: we leave this section to you *)
-let part2_section1_tests = "Part 2 Section 2" >: test_list []
+let test_iota1' _ = 
+  assert_equal (iota1' 3) [ 3; 2; 1 ];
+  assert_equal (iota1' 0) [ ]
+
+let test_iota2' _ = 
+  assert_equal (iota2' 3) [ 1; 2; 3 ];
+  assert_equal (iota2' 0) [ ]
+
+let test_factors' _ = 
+  assert_equal (factors' 9) [ 1; 3; 9 ];
+  assert_equal (factors' 1) [ 1 ]
+
+let test_insert_string' _ = 
+assert_equal (insert_string "FPSE" [ "I"; "Love" ]) [ "FPSE"; "I"; "Love" ];
+assert_equal
+  (insert_string "baa" [ "0"; "111"; "abb"; "abc"; "bcd" ])
+  [ "0"; "111"; "abb"; "abc"; "baa"; "bcd" ]
+
+
+
+let part2_section1_tests = "Part 2 Section 1" 
+  >: test_list 
+        [
+          "Iota1'" >:: test_iota1';
+          "Iota2'" >:: test_iota2';
+          "Factors'" >:: test_factors;
+          "Insert String'" >:: test_insert_string';
+        ]
 
 (* Part II Section 2 *)
-let tower_board_example_2x2 = [ [ 1; 2 ]; 
+let tower_board_example_2x2 = [ [ 3; 2 ]; 
                                 [ 2; 1 ] ]
 let tower_board_ill_formed_example_2x2 = [ [ 1; 2 ]; 
                                            [ 2; 2 ] ]
