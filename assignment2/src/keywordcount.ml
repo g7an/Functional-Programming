@@ -215,14 +215,38 @@ type result_list = result list [@@deriving yojson];;
 
 (* iterate through the string list, if the string is a keyword, then add to the result list. Otherwise, we don't add to the result list *)
 
-(* convert (string * int) list to result list  *)
+(** convert (string * int) list to result list  *)
 let rec assoc_to_result lst acc =
   match lst with
   | [] -> acc
   | (k, v)::t -> assoc_to_result t (acc @ [{keyword = k; count = v}]);;
   (* [("else",2); ("if",2); ("then",2);("let",1);("rec",1)] *)
 
-(* convert string list to string list by removing empty strings *)
+(** [dir_is_empty dir] is true, if [dir] contains no files except
+ * "." and ".."
+ *)
+ let dir_is_empty dir =
+  Array.length (Sys_unix.readdir dir) = 0;;
+
+(** [dir_contents] returns the paths of all regular files that are
+ * contained in [dir]. Each file is a path starting with [dir].
+  *)
+let find_ocaml_files dir = 
+  (* check if a file is a directory *)
+  let is_dir file = Sys_unix.is_directory file in
+  match (is_dir dir) with
+  | `Yes -> (
+      if dir_is_empty dir then [] else
+      let files = Sys_unix.readdir dir in
+      let files = Array.to_list files in
+      let files = List.map ~f:(fun x -> dir ^ "/" ^ x) files in
+      (* let files = List.filter ~f:(fun x -> not (is_dir x)) files in *)
+      let files = List.filter ~f:(fun x -> String.is_suffix x ~suffix:".ml") files in
+      files
+    )
+  | _ -> []
+  (* check if a file is a regular file *)
+
 
 let () =
   let target_dir = 
@@ -230,11 +254,17 @@ let () =
     | _ :: dir :: _ ->  dir
     | _ -> Core_unix.getcwd ()
   in 
-  (* print list of string  *)
-  let char_list = get_path_elts target_dir in 
-  let lst = char_list_to_string_list char_list [] "" |> Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort in 
-  (* Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort |> occurence_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline;; *)
-    assoc_to_result lst [] |> result_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline;;
+  let dir_list = (find_ocaml_files target_dir) in
+  let rec helper dir_list =
+    match dir_list with
+    | [] -> print_endline "No .ml files found"
+    | file::tl -> ((* print list of string  *)
+        let char_list = get_path_elts file in 
+        let lst = char_list_to_string_list char_list [] "" |> Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort in 
+        (* Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort |> occurence_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline;; *)
+          assoc_to_result lst [] |> result_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline; helper tl)
+  in helper dir_list;;
+  
 
 
   (* Stdio.printf "result: %s\n" content;; *)
