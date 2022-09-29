@@ -255,15 +255,19 @@ let () =
     | _ -> Core_unix.getcwd ()
   in 
   let dir_list = (find_ocaml_files target_dir) in
-  let rec helper dir_list =
+  let rec helper dir_list result =
     match dir_list with
     | [] -> print_endline "No .ml files found"
-    | file::tl -> ((* print list of string  *)
+    | file::tl -> 
+      (
+        (* print list of string *)
         let char_list = get_path_elts file in 
         let lst = char_list_to_string_list char_list [] "" |> Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort in 
         (* Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort |> occurence_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline;; *)
-          assoc_to_result lst [] |> result_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline; helper tl)
-  in helper dir_list;;
+        let keyword_counts_to_json_string = assoc_to_result lst [] |> result_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline in
+        keyword_counts_to_json_string; helper tl result
+      )
+  in helper dir_list [];;
   
 
 
