@@ -95,7 +95,7 @@ open Core
 (* 
   As with C, the first argv is always the name of the executable, that's why we match on the second element in the list instead 
 *)
-(* convert string into string list *)
+(* convert string into char list *)
 let string_to_list str = 
   let rec string_to_list_helper str index = 
     if index = String.length str then [] else (String.get str index)::(string_to_list_helper str (index + 1))
@@ -107,12 +107,12 @@ let remove_literal_string lst =
     match lst with 
     | [] -> acc
     | h::t -> if has_quote then 
-                if Char.(h='"') then remove_literal_string_helper t acc false
-                else remove_literal_string_helper t (acc @ [h]) has_quote
-              else 
-                if Char.(h='"') then remove_literal_string_helper t acc true
+                if Char.(h='"') then remove_literal_string_helper t acc (not has_quote)
                 else remove_literal_string_helper t acc has_quote
-  in remove_literal_string_helper lst [] true;;
+              else 
+                if Char.(h='"') then remove_literal_string_helper t acc (not has_quote)
+                else remove_literal_string_helper t (acc @ [h]) has_quote
+  in remove_literal_string_helper lst [] false;;
 
 
 (* iterate through string list. Use a count to store the occurence of the comment sign. Add to count if left comment sign occur. 
@@ -128,125 +128,62 @@ let remove_comment lst =
       | _ -> acc @ lst
   in remove_comment_helper lst [] 0;;
 
-let remove_escapes lst = 
-  let rec remove_escapes_helper lst acc = 
-    match lst with
-    | [] -> acc
-    | h::t -> if Char.(h='\t') || Char.(h='\n') then remove_escapes_helper t acc
-              else remove_escapes_helper t (acc @ [h])
-  in remove_escapes_helper lst [];;
-
-(* ['y';'('; '*'; 'a'; '*'; ')'; 'z'; 'h'] *)
-
-(* iterate through string list. If the string is a keyword, then add to the result list. Otherwise, we don't add to the result list *)
-
-(* iterate through a string, append the characters to a list until you find a double quote, then return the list *)
-(* read content of file line by line *)
-let read_file file =
-  (* let cnt = ref 0 in *)
-  (* get the file contents as a string *)
-  In_channel.read_all file;;
-  (* iterate over the lines *)
-
-  (* iterate through a string, append the characters to a list until you find a double quote, then return the list *)
-(* let rec get_path_elts path acc =
-  let content = read_file path in *)
-
-
-      (* append the line only if it is not a comment or a string literal *)
-(* trim spaces before and after a string *)
-(* split string if it has >= 1 whitespaces *)
-(* let split_on_whitespaces str = 
-  let rec split_on_whitespaces_helper str acc = 
-    match str with 
-    | [] -> acc
-    | h::t -> if Char.(h=' ') then split_on_whitespaces_helper t acc
-              else split_on_whitespaces_helper t (acc @ [h])
-  in split_on_whitespaces_helper str [];; *)
-
-
 let get_path_elts path =
-  let content = read_file path in
+  let content = In_channel.read_all path in
   let trimmed_content = String.strip content in
   let content_lst = string_to_list trimmed_content in
   let removed_literal_string = remove_literal_string content_lst in
-  remove_comment removed_literal_string |> remove_escapes ;;
+  remove_comment removed_literal_string ;;
 
-(* convert char list to string *)
-      (* if String.is_prefix trimmed_line ~prefix:"\"" then
-        append_line acc t
-      else
-     (* use a cnt to store the number of (; set cnt = cnt + 1 when meet "(", set cnt = cnt - 1 when meet ")"
-        exclude all line when cnt > 0
-     *)
-        if String.is_prefix trimmed_line ~prefix:"(*" then
-          (cnt := 1 + !cnt;
-          append_line acc t)
-        else
-          if String.is_suffix trimmed_line ~suffix:"*)" then
-            (cnt := !cnt - 1;
-            append_line acc t)
-          else
-            if !cnt > 0 then
-              append_line acc t
-            else
-              append_line (trimmed_line::acc) t 
-            in
-  let lines = Stdio.In_channel.read_lines file
-  (* append the line only if it is not a comment or a string literal *)
-      in 
-   let res = append_line [] lines in
-   (* generate a string list from split a string by space *)
-  String.concat ~sep:" " res |> String.split ~on:' ' *)
-
-
-(* type ts = t Simpledict.dict [@@deriving yojson] *)
-type occurence_list = (string * int) list [@@deriving yojson];;
 
 (* convert char list to string list by forming new strings with the characters until space is found *)
 let rec char_list_to_string_list lst acc str =
   match lst with
-  | [] -> if String.(str<>"") then acc@[str] else acc
-  | h::t -> if Char.(h=' ') then char_list_to_string_list t (acc@[str]) ""
-            else char_list_to_string_list t acc (str ^ String.of_char h);;
+  | [] -> acc@[str]
+  | h::t -> 
+    (if ((not (Char.is_alphanum h)) && (Char.(h<>'_'))) then char_list_to_string_list t (acc@[str]) ""
+            else char_list_to_string_list t acc (str ^ String.of_char h));;
 
+
+(* split a string into a list of strings by non-alphanumeric and non-underscore characters *)
 type result = { keyword: string; count: int } [@@deriving yojson];;
 type result_list = result list [@@deriving yojson];;
-
-(* iterate through the string list, if the string is a keyword, then add to the result list. Otherwise, we don't add to the result list *)
 
 (** convert (string * int) list to result list  *)
 let rec assoc_to_result lst acc =
   match lst with
   | [] -> acc
   | (k, v)::t -> assoc_to_result t (acc @ [{keyword = k; count = v}]);;
-  (* [("else",2); ("if",2); ("then",2);("let",1);("rec",1)] *)
 
-(** [dir_is_empty dir] is true, if [dir] contains no files except
- * "." and ".."
- *)
- let dir_is_empty dir =
-  Array.length (Sys_unix.readdir dir) = 0;;
+let is_directory file = 
+  match Sys_unix.is_directory file with
+  | `Yes -> true
+  | _ -> false;;
 
-(** [dir_contents] returns the paths of all regular files that are
- * contained in [dir]. Each file is a path starting with [dir].
-  *)
-let find_ocaml_files dir = 
-  (* check if a file is a directory *)
-  let is_dir file = Sys_unix.is_directory file in
-  match (is_dir dir) with
-  | `Yes -> (
-      if dir_is_empty dir then [] else
-      let files = Sys_unix.readdir dir in
-      let files = Array.to_list files in
-      let files = List.map ~f:(fun x -> dir ^ "/" ^ x) files in
-      (* let files = List.filter ~f:(fun x -> not (is_dir x)) files in *)
-      let files = List.filter ~f:(fun x -> String.is_suffix x ~suffix:".ml") files in
-      files
-    )
-  | _ -> []
-  (* check if a file is a regular file *)
+let find_files dir =
+  if is_directory dir then 
+  (let files = Array.to_list (Sys_unix.readdir dir) in
+  let files = List.map ~f:(fun x -> dir ^ "/" ^ x) files in
+  files)
+  else [];;
 
+
+let rec find_ocaml_files dir_content ocaml_list = 
+  match dir_content with 
+  | [] -> ocaml_list
+  | h::t -> 
+    if is_directory h then find_ocaml_files ((find_files h) @ t) ocaml_list
+    else if String.is_suffix h ~suffix:".ml" then find_ocaml_files t (h::ocaml_list)
+    else find_ocaml_files t ocaml_list;;
+
+let rec get_string_list dir_list result =
+  match dir_list with
+  | [] -> result
+  | file::tl -> 
+    (
+      let char_list = get_path_elts file in 
+      get_string_list tl ((char_list_to_string_list char_list [] "") @ result)
+    );;
 
 let () =
   let target_dir = 
@@ -254,57 +191,13 @@ let () =
     | _ :: dir :: _ ->  dir
     | _ -> Core_unix.getcwd ()
   in 
-  let dir_list = (find_ocaml_files target_dir) in
-  let rec helper dir_list result =
-    match dir_list with
-    | [] -> print_endline "No .ml files found"
-    | file::tl -> 
-      (
-        (* print list of string *)
-        let char_list = get_path_elts file in 
-        let lst = char_list_to_string_list char_list [] "" |> Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort in 
-        (* Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort |> occurence_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline;; *)
-        let keyword_counts_to_json_string = assoc_to_result lst [] |> result_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline in
-        keyword_counts_to_json_string; helper tl result
-      )
-  in helper dir_list [];;
-  
-
-
-  (* Stdio.printf "result: %s\n" content;; *)
-  (* read_file target_dir |> List.iter ~f:(fun x -> print_endline (String.concat ~sep:" " x)); *)
-  (* read_file target_dir |> Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort |> occurence_list_to_yojson |> Yojson.Safe.to_string |> Stdio.print_endline *)
-  
-  (* convert [[keyword1, count1], [keyword2, count2], ...] 
-  to json format
-  [ { "keyword": <word>,
-  "count": <number>
- }, 
- { "keyword": <word>,
-  "count": <number>
- } ... ] *)
-
-
-(* let convert res =
-  let rec convert_helper res acc =
-    match res with
-    | [] -> acc
-    | h::t -> 
-        convert_helper t (acc ^ "{ \"keyword\": \"" ^ (fst h) ^ "\", \"count\": " ^ (string_of_int (snd h)) ^ " }, ")
-      
-  in
-  "[" ^ (convert_helper res "") ^ "]" *)
- (* let val =  [("k1", 1); ("k2", 2)]  *)
-
-  (* let a = t_to_yojson [("A", 1),("B",42),("C",42)] |> Yojson.Safe.to_string |> Stdio.print_endline *)
-(* type t = (string * int) list [@@deriving yojson]
-let a = print_endline (Yojson.Safe.to_string (t_to_yojson [("foo", 42)]));; *)
-
-
-(* print_endline (Yojson.Safe.to_string (v_to_yojson [("foo", 42); ("bar", 1)]));; *)
-  (* Stdio.printf "Target dir: %s\n" target_dir *)
-  (* let _ = List.iter target_dir ~f:(fun x -> Stdio.printf "%s " x) in *)
-  (* ()  *)
+  let dir_list = (let files = find_files target_dir in find_ocaml_files files []) in
+  (* count_keywords *)
+  let tmp = get_string_list dir_list [] |> Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort in
+  (* keyword_counts_to_json_string *)
+  assoc_to_result tmp [] |> result_list_to_yojson |> Yojson.Safe.to_string 
+  (* print_string *)
+  |> Stdio.print_endline;;
 
 
 (* 
