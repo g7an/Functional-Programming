@@ -165,6 +165,8 @@ let find_files dir =
   (let files = Array.to_list (Sys_unix.readdir dir) in
   let files = List.map ~f:(fun x -> dir ^ "/" ^ x) files in
   files)
+  else if (String.is_suffix dir ~suffix:".ml" || String.is_suffix dir ~suffix:".mli") then 
+    ([dir])
   else [];;
 
 
@@ -173,7 +175,7 @@ let rec find_ocaml_files dir_content ocaml_list =
   | [] -> ocaml_list
   | h::t -> 
     if is_directory h then find_ocaml_files ((find_files h) @ t) ocaml_list
-    else if String.is_suffix h ~suffix:".ml" then find_ocaml_files t (h::ocaml_list)
+    else if (String.is_suffix h ~suffix:".ml" || String.is_suffix h ~suffix:".mli") then find_ocaml_files t (h::ocaml_list)
     else find_ocaml_files t ocaml_list;;
 
 let rec get_string_list dir_list result =
