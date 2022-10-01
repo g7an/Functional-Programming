@@ -86,83 +86,16 @@ open Core
    ]
 *)
 
-(* let find_comment_sign lst =
-   let rec find_double_quote_helper lst index =
-     match lst with
-     | [] -> None
-     | h::t -> if String.(h="(*") then Some index else find_double_quote_helper t (index + 1)
-   in find_double_quote_helper lst 0 *)
 (*
    As with C, the first argv is always the name of the executable, that's why we match on the second element in the list instead
 *)
-(* convert string into char list *)
-let string_to_list str =
-  let rec string_to_list_helper str index =
-    if index = String.length str then []
-    else String.get str index :: string_to_list_helper str (index + 1)
-  in
-  string_to_list_helper str 0
 
-(* iterate through string list. Flip the boolean to false if a double quote occur. If the boolean is false, then we don't add the string to the result list *)
-let remove_literal_string lst =
-  let rec remove_literal_string_helper lst acc has_quote =
-    match lst with
-    | [] -> acc
-    | h :: t ->
-        if has_quote then
-          if Char.(h = '"') then
-            remove_literal_string_helper t acc (not has_quote)
-          else remove_literal_string_helper t acc has_quote
-        else if Char.(h = '"') then
-          remove_literal_string_helper t acc (not has_quote)
-        else remove_literal_string_helper t (acc @ [ h ]) has_quote
-  in
-  remove_literal_string_helper lst [] false
-
-(* iterate through string list. Use a count to store the occurence of the comment sign. Add to count if left comment sign occur.
-   Minus from the count if right comment sign occur. If the count is greater than 0, then we don't add the string to the result list
-   Otherwise we add the string to the result list *)
-let remove_comment lst =
-  let rec remove_comment_helper lst acc count =
-    match lst with
-    | h1 :: h2 :: t ->
-        if Char.(h1 = '(') && Char.(h2 = '*') then
-          remove_comment_helper t acc (count + 1)
-        else if Char.(h1 = '*') && Char.(h2 = ')') then
-          remove_comment_helper t acc (count - 1)
-        else if count > 0 then remove_comment_helper (h2 :: t) acc count
-        else remove_comment_helper (h2 :: t) (acc @ [ h1 ]) count
-    | _ -> acc @ lst
-  in
-  remove_comment_helper lst [] 0
-
-let generate_char_list path =
-  In_channel.read_all path |> String.strip |> string_to_list
-  |> remove_literal_string |> remove_comment
-
-(* convert char list to string list by forming new strings with the characters until space is found *)
-let rec char_list_to_string_list lst acc str =
-  match lst with
-  | [] -> acc @ [ str ]
-  | h :: t ->
-      if (not (Char.is_alphanum h)) && Char.(h <> '_') then
-        char_list_to_string_list t (acc @ [ str ]) ""
-      else char_list_to_string_list t acc (str ^ String.of_char h)
-
-(* split a string into a list of strings by non-alphanumeric and non-underscore characters *)
-type result = { keyword : string; count : int } [@@deriving yojson]
-type result_list = result list [@@deriving yojson]
-
-(** convert (string * int) list to result list  *)
-let rec assoc_to_result lst acc =
-  match lst with
-  | [] -> acc
-  | (k, v) :: t -> assoc_to_result t (acc @ [ { keyword = k; count = v } ])
-
+(** check if the path string points to a directory, return a boolean flag *)
 let is_directory file =
   match Sys_unix.is_directory file with `Yes -> true | _ -> false
 
-let find_files dir =
+(** recursively find all files in a directory or nested directory *)
+let find_files_in_dir dir =
   if is_directory dir then
     Array.to_list (Sys_unix.readdir dir) |> List.map ~f:(fun x -> dir ^ "/" ^ x)
   else if
@@ -170,22 +103,33 @@ let find_files dir =
   then [ dir ]
   else []
 
+(** find ocaml file in the listed directory  *)
 let rec find_ocaml_files dir_content ocaml_list =
   match dir_content with
   | [] -> ocaml_list
   | h :: t ->
-      if is_directory h then find_ocaml_files (find_files h @ t) ocaml_list
+      if is_directory h then
+        find_ocaml_files (find_files_in_dir h @ t) ocaml_list
       else if
         String.is_suffix h ~suffix:".ml" || String.is_suffix h ~suffix:".mli"
       then find_ocaml_files t (h :: ocaml_list)
       else find_ocaml_files t ocaml_list
 
-let rec get_string_list dir_list result =
+let rec get_path_elts dir_list result =
   match dir_list with
   | [] -> result
   | file :: tl ->
-      let char_list = generate_char_list file in
-      get_string_list tl (char_list_to_string_list char_list [] "" @ result)
+      let char_list = Simpledict.generate_valid_list file in
+      get_path_elts tl (Simpledict.split_chars char_list [] "" @ result)
+
+type result = { keyword : string; count : int } [@@deriving yojson]
+type result_list = result list [@@deriving yojson]
+
+(* convert (string * int) list to result list  *)
+let rec assoc_to_result lst acc =
+  match lst with
+  | [] -> acc
+  | (k, v) :: t -> assoc_to_result t (acc @ [ { keyword = k; count = v } ])
 
 let () =
   let target_dir =
@@ -193,17 +137,16 @@ let () =
     | _ :: dir :: _ -> dir
     | _ -> Core_unix.getcwd ()
   in
-  let dir_list =
-    let files = find_files target_dir in
-    find_ocaml_files files []
-  in
+  let dir_list = find_files_in_dir target_dir |> Fn.flip find_ocaml_files [] in
+  let path_elts = get_path_elts dir_list [] in
   (* count_keywords *)
-  let tmp =
-    get_string_list dir_list []
-    |> Simpledict.count_keywords |> Simpledict.assoc_of_dict |> Simpledict.sort
+  let count_keywords keyword_list =
+    Simpledict.count_keywords keyword_list
+    |> Simpledict.assoc_of_dict |> Simpledict.sort
   in
   (* keyword_counts_to_json_string *)
-  assoc_to_result tmp [] |> result_list_to_yojson |> Yojson.Safe.to_string
+  assoc_to_result (count_keywords path_elts) []
+  |> result_list_to_yojson |> Yojson.Safe.to_string
   (* print_string *)
   |> Stdio.print_endline
 

@@ -1,12 +1,10 @@
 (* Part I: A Binary Tree Based Dictionary
 
-   This file specifies the interface for your code and must not be edited (it will also not be included in your zip submission). 
+   This file specifies the interface for your code and must not be edited (it will also not be included in your zip submission).
    Your actual implementation should go in the file `simpledict.ml`  which satisfies this interface appropriately.
 
    Mutation operations of OCaml are not allowed, or required.
-   
 *)
-
 
 (*
     What follows is a a binary tree, with (key,value) pairs at each branching node.  Each such (key,value) will be used to represent a dictionary entry of a key mapping to a value.  For simplicity we will restrict the keys to be `string`s only; the values are of type 'a.
@@ -14,8 +12,12 @@
 
 type 'a dict =
   | Leaf
-  | Branch of string * 'a * 'a dict * 'a dict (* key, value, left subtree, right subtree *)
-  [@@deriving yojson]
+  | Branch of
+      string
+      * 'a
+      * 'a dict
+      * 'a dict (* key, value, left subtree, right subtree *)
+[@@deriving yojson]
 
 (* We will now define several natural operations on these dictionaries. *)
 
@@ -54,7 +56,7 @@ val insert : 'a dict -> string -> 'a -> 'a dict
 (*
     Given a dict and some transforming operation, apply the operation to each value within the dictionary to produce a new dict, but keeping the keys constant.  Note that the mapping function f can use the key in its calculation so we also pass it as an argument.
 *)
-val map : 'a dict -> f:(string ->'a -> 'b) -> 'b dict
+val map : 'a dict -> f:(string -> 'a -> 'b) -> 'b dict
 
 (*
     Given two dictionaries, merge them into one, preserving the ordering property.
@@ -69,17 +71,23 @@ val merge : 'a dict -> 'a dict -> 'a dict
 
     Note since we have a merger function here the dictionaries may in principle have different types.
 *)
-val merge_with : 'a dict -> 'b dict ->  merger:('a option -> 'b option -> 'c) -> 'c dict
+val merge_with :
+  'a dict -> 'b dict -> merger:('a option -> 'b option -> 'c) -> 'c dict
 
 (*
     Define a filter operation over dictionaries, in analogy to filter on lists: apply a predicate to each element of the dictionary and return a dictionary containing only the elements on which the predicate returns `true`.  We will allow the predicate `f` to access both the key and the value as can be seen from its type below.
 *)
 val filter : 'a dict -> f:(string -> 'a -> bool) -> 'a dict
 
-(* 
-    Show the usefulness of filtering by determining if a dict of numbers contains only even numbers, *without using any recursion in your code for this function* - use `filter` and other functions defined above only.
+(*
+     Show the usefulness of filtering by determining if a dict of numbers contains only even numbers, *without using any recursion in your code for this function* - use `filter` and other functions defined above only.
 *)
 val is_all_evens : int dict -> bool
-
-val count_keywords: string list -> int dict
-val sort: (string * int) list -> (string * int) list
+val count_keywords : string list -> int dict
+val sort : (string * int) list -> (string * int) list
+val string_to_list : string -> char list
+val remove_literal_string : char list -> char list
+val remove_comment : char list -> char list
+val generate_valid_list : string -> char list
+val split_chars : char list -> string list -> string -> string list
+val is_in_list : string -> string list -> bool
