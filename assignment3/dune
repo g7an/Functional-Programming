@@ -1,0 +1,10 @@
+(rule
+  (target assignment3.zip)
+  (deps 
+    src/abstraction.ml
+    src/dune
+    tests/tests.ml
+    tests/dune
+  )
+  (action
+    (run zip -R assignment3.zip %{deps})))
