@@ -128,11 +128,50 @@ end
   Note this version will in fact not work properly due to the types, so we call it `Cont_dud`.  A minor tweak below will fix it.
 
 *)
+
 module Cont_dud (Key : Interp) : Cont_map = struct
   (*
     ... Put implementation here ... will be a type error until you fill in ..
   *)
-  
+  type t = (Key.t * Key.t) list
+  type key = Key.t
+  type value = Key.t
+
+  let empty = []
+
+  let lookup k m = List.assoc_opt k m
+
+  let insert k v m = (k,v)::m
+
+  let remove k m = (List.remove_assoc k m, List.assoc_opt k m)
+
+  let lub_key k m = 
+    let rec aux m = 
+      match m with
+      | [] -> None
+      | (k',_)::t -> if Key.compare k k' > 0 then aux t else Some k'
+    in aux m
+
+  let glb_key k m = 
+    let rec aux m = 
+      match m with
+      | [] -> None
+      | (k',_)::t -> if Key.compare k k' < 0 then aux t else Some k'
+    in aux m
+
+  let interpolated_lookup k m = 
+    (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.  
+     You should interpolate from the two keys nearest to the key provided here; the previous two functions will provide those keys.  
+     If the key here is not between two existing keys there is no interpolation to be done so return None.  
+     Note that if the key is in fact already in the mapping its value can directly be returned - there is no need to interpolate.  *)
+    let glb = glb_key k m in
+    let lub = lub_key k m in
+    match glb, lub with
+    | None, _ -> None
+    | _, None -> None
+    | Some glb, Some lub -> 
+      if Key.compare glb lub = 0 then Some (List.assoc k m)
+      else Some (Key.interpolate (glb, List.assoc glb m) (lub, List.assoc lub m) k)
 end
 
 (*
@@ -141,7 +180,9 @@ end
   The great advantage of programming against the `Interp` or `Cont_map` interface is precisely not having to know
   what the underlying type `key` and `t` is; this restricts your dependent code from becoming tightly coupled to any particular instantiation of the interface.
 
-  However, the definition of the `Cont_map` interface makes no distinction between how "hidden" the `t` and `key` types should be. This means that both are only presented as abstract types to any code outside the module... but we need to create a value of type `key` in order to use any of the Cont_map's features! We've been so successful at hiding the implementation, that we can't even use it - !
+  However, the definition of the `Cont_map` interface makes no distinction between how "hidden" the `t` and `key` types should be. 
+  This means that both are only presented as abstract types to any code outside the module... but we need to create a value of type `key` in order to use any of the Cont_map's features! 
+  We've been so successful at hiding the implementation, that we can't even use it - !
 
   Fortunately OCaml has a way to specifically un-hide an abstract type in a module type for this reason. Consider the following definition of `Interp` for floats:
 *)
@@ -160,17 +201,56 @@ end
 (*
   Exercise 2:
 
-  Modify the signature given to `Cont_map` in your implementation using `with` so that the functor will expose the `key` type, solving the over-hiding problem so that the data structure can finally be used.
+  Modify the signature given to `Cont_map` in your implementation using `with` so that the functor will expose the `key` type, 
+  solving the over-hiding problem so that the data structure can finally be used.
 
   Hint: remember that you can externally refer to a type ty defined within a module Mod by the notation "Mod.ty".  You will need that here.
 
 *)
 
-module Cont_map (Key : Interp) : Cont_map = struct (* CHANGE this line this time to make it work *)
+module Cont_map (Key : Interp) : Cont_map with type key = Key.t = struct (* CHANGE this line this time to make it work *)
   (*
     ... You can copy/paste your implementation from above here ... 
   *)
+  type t = (Key.t * Key.t) list
+  type key = Key.t
+  type value = Key.t
 
+  let empty = []
+
+  let lookup k m = List.assoc_opt k m
+
+  let insert k v m = (k,v)::m
+
+  let remove k m = (List.remove_assoc k m, List.assoc_opt k m)
+
+  let lub_key k m = 
+    let rec aux m = 
+      match m with
+      | [] -> None
+      | (k',_)::t -> if Key.compare k k' > 0 then aux t else Some k'
+    in aux m
+
+  let glb_key k m = 
+    let rec aux m = 
+      match m with
+      | [] -> None
+      | (k',_)::t -> if Key.compare k k' < 0 then aux t else Some k'
+    in aux m
+
+  let interpolated_lookup k m = 
+    (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.  
+     You should interpolate from the two keys nearest to the key provided here; the previous two functions will provide those keys.  
+     If the key here is not between two existing keys there is no interpolation to be done so return None.  
+     Note that if the key is in fact already in the mapping its value can directly be returned - there is no need to interpolate.  *)
+    let glb = glb_key k m in
+    let lub = lub_key k m in
+    match glb, lub with
+    | None, _ -> None
+    | _, None -> None
+    | Some glb, Some lub -> 
+      if Key.compare glb lub = 0 then Some (List.assoc k m)
+      else Some (Key.interpolate (glb, List.assoc glb m) (lub, List.assoc lub m) k)
 end
 
 (* With the above in place we can make a continuous map for floats *)
