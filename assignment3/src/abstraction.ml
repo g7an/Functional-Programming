@@ -106,7 +106,8 @@ module type Cont_map = sig
   (*
       Since we are aiming to support finitary mappings, we may also want to find the nearest key(s).
       The following function will find the *least* key in the mapping that is *greater or equal to* than the key we passed in.
-      For example, for mapping { 0 |-> 3, 3 |-> 5, 5 |-> 9} lub_key on 4 will return Some(5), the next-largest key.  lub_key on 3 will return `Some(3).  Return `None` if there is no larger or equal key. *)
+      For example, for mapping { 0 |-> 3, 3 |-> 5, 5 |-> 9} lub_key on 4 will return Some(5), the next-largest key.  
+      lub_key on 3 will return `Some(3).  Return `None` if there is no larger or equal key. *)
 
   val lub_key : key -> t -> key option
 
@@ -141,7 +142,12 @@ module Cont_dud (Key : Interp) : Cont_map = struct
 
   let lookup k m = List.assoc_opt k m
 
-  let insert k v m = (k,v)::m
+  let insert k v m =
+    let rec aux m = 
+      match m with
+      | [] -> [(k, v)]
+      | (k',v')::t -> if Key.compare k k' = 0 then (k,v)::t else (k',v')::(aux t)
+    in aux m
 
   let remove k m = (List.remove_assoc k m, List.assoc_opt k m)
 
@@ -149,14 +155,14 @@ module Cont_dud (Key : Interp) : Cont_map = struct
     let rec aux m = 
       match m with
       | [] -> None
-      | (k',_)::t -> if Key.compare k k' > 0 then aux t else Some k'
+      | (k',_)::t -> if Key.compare k k' < 0 then aux t else Some k'
     in aux m
 
   let glb_key k m = 
     let rec aux m = 
       match m with
       | [] -> None
-      | (k',_)::t -> if Key.compare k k' < 0 then aux t else Some k'
+      | (k',_)::t -> if Key.compare k k' > 0 then aux t else Some k'
     in aux m
 
   let interpolated_lookup k m = 
@@ -220,23 +226,54 @@ module Cont_map (Key : Interp) : Cont_map with type key = Key.t = struct (* CHAN
 
   let lookup k m = List.assoc_opt k m
 
-  let insert k v m = (k,v)::m
+  let insert k v m = 
+    (* if k is in m then update v' to v
+    else append (k,v) to m *)
+    let rec aux m = 
+      match m with
+      | [] -> [(k, v)]
+      | (k',v')::t -> if Key.compare k k' = 0 then (k,v)::t else (k',v')::(aux t)
+    in aux m
 
   let remove k m = (List.remove_assoc k m, List.assoc_opt k m)
 
   let lub_key k m = 
-    let rec aux m = 
-      match m with
-      | [] -> None
-      | (k',_)::t -> if Key.compare k k' > 0 then aux t else Some k'
-    in aux m
+    if lookup k m <> None then Some k
+    else
+      ( 
+        let rec aux m acc =
+          match m with
+          | [] -> if acc = k then None else Some acc
+          | (k', _)::t -> 
+            if Key.compare acc k = 0 then 
+              (if Key.compare k' k > 0 
+                  then aux t k' 
+               else aux t acc)
+            else if ((Key.compare k' k > 0) && (Key.compare k' acc <= 0)) 
+              then aux t k' 
+            else aux t acc
+          in aux m k
+      )
 
   let glb_key k m = 
-    let rec aux m = 
-      match m with
-      | [] -> None
-      | (k',_)::t -> if Key.compare k k' < 0 then aux t else Some k'
-    in aux m
+    (* if k is in m then Some k, 
+    else let result equals to first k' that is smaller than k, 
+    compare with all the k's in m, return some result *)
+    if lookup k m <> None then Some k
+    else
+      ( 
+        let rec aux m acc =
+          match m with
+          | [] -> if acc = k then None else Some acc
+          | (k', _)::t -> if Key.compare acc k = 0 then 
+                            (if Key.compare k' k < 0 
+                                then aux t k' 
+                             else aux t acc)
+                          else if ((Key.compare k' k < 0) && (Key.compare k' acc >= 0)) 
+                            then aux t k' 
+                          else aux t acc
+        in aux m k
+      )
 
   let interpolated_lookup k m = 
     (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.  
@@ -268,13 +305,17 @@ module Float_cont_map = Cont_map (Float_interp)
 (*
   Exercise 3:
 
-  For this question we will develop a generic operator language parser / evaluator. We will make it generic by allowing us to "plug in" the underlying data type.
+  For this question we will develop a generic operator language parser / evaluator. 
+  We will make it generic by allowing us to "plug in" the underlying data type.
 
-  Note we will simplify several things so this is primarily an OCaml abstraction exercise and not a parsing exercise.  We will have only `+` and `*` binary operations, will just parse a string rather than reading from a stream, and will use postfix (aka RPN) notation for operators: "1 2 +" will return 3.
+  Note we will simplify several things so this is primarily an OCaml abstraction exercise and not a parsing exercise.  
+  We will have only `+` and `*` binary operations, will just parse a string rather than reading from a stream, 
+  and will use postfix (aka RPN) notation for operators: "1 2 +" will return 3.
   
 *)
 
-(* Here is the module type for the underlying data.
+(* 
+   Here is the module type for the underlying data.
    The key function is next, it reads a `t` off of the front of the string,
    and returns the remainder of the string as well as the `t` element.
 
@@ -322,12 +363,44 @@ end
 
 (* a. Write the evaluator functor matching this signature.  *)
 
-(* Uncomment this code and fill in the ...
+(* Uncomment this code and fill in the ... *)
+(* print all the values in the list *)
 
    module Eval : Eval = functor (Data : Data) -> struct
-     ...
+      type t = Data.t
+  
+      let eval s = 
+        let rec aux s acc =
+          let next = Data.next s in
+          match next with
+          | None -> Ok acc
+          | Some (s', t) -> 
+            print_string (s' ^ "\n"); 
+            match s' with
+              (* | "+" -> print_char '+'; aux (String.sub s' 1 (String.length s' - 1)) (Data.plus t acc)
+              | "*" -> print_char '*'; aux (String.sub s' 1 (String.length s' - 1)) (Data.times t acc) *)
+              | _ -> aux s' (t)
+        in aux s (Data.from_string "0")
+
+        (* let rec aux s stack = 
+          match Data.next s with 
+          | None ->  *)
+            
+
+
+        (* We will have only `+` and `*` binary operations, will just parse a string rather than reading from a stream, 
+  and will use postfix (aka RPN) notation for operators: "1 2 +" will return 3. *)
+        (* let rec aux s stack = 
+          match Data.next s with
+          | None -> Ok (List.hd stack)
+          | Some (s', t) -> 
+            match s' with
+            | "+" -> aux (String.sub s' 1 (String.length s' - 1)) (Data.plus (List.hd stack) (List.nth stack 1) :: (List.tl (List.tl stack)))
+            | "*" -> aux (String.sub s' 1 (String.length s' - 1)) (Data.times (List.hd stack) (List.nth stack 1) :: (List.tl (List.tl stack)))
+            | _ -> aux s' (t :: stack)
+        in aux s [] *)
    end
-*)
+
 
 (* b. Make Int_Data and Rat_Data modules for parsing integers and rationals.
 
@@ -340,10 +413,67 @@ end
       Additionally, for whole numbers, format them with the number divided by 1, e.g. "-1/1". "0/1", "1/1", "2/1".
 *)
 
-(* remove this comment and fill in:
+(* remove this comment and fill in: *)
+(* 
+   Here is the module type for the underlying data.
+   The key function is next, it reads a `t` off of the front of the string,
+   and returns the remainder of the string as well as the `t` element.
 
-   module Int_Data ...
+   Here are some clarifications on how next works.
+   1. whitespace (space, tab, newline) is a separator, the `t` value ends at that point.
+   2. `next` is only reponsible for reading a `t` off the front of the string
+   3. It should obey the "maximal munch" principle, read in as many characters as possible
+     whilst still making a `t`.  So for example on input `"12"` for `t = int` read in `12`, not `1`.
+     On "12@" next will return `12` plus remainder "@", `next` is not responsible for checking
+     for other errors except for illegal types (see point 5).
+   4. If `next` returned `None`, the output string remains unchanged from the input string
+   5. `next` will return `None` in 4 cases. If we reached the end of the string (no more `t` to read),
+       we encountered an illegal character like `@`, we encountered an operator, or we encountered an illegal type.
+       An illegal type is defined based on what kind of concrete Data we are implementing. See more below on Int_Data and Rat_Data
 *)
+(* check if a char is digit from 0 to 9 *)
+  let is_digit c = 
+    match c with
+    | '0'..'9' -> true
+    | _ -> false
+
+    
+   module Int_Data: Data with type t = int = struct
+      type t = int
+
+      let from_string s = int_of_string s
+      let to_string i = string_of_int i
+      let next s = 
+        (* return the next string separated by whitespace *)
+        (let rec aux s acc = 
+          match s with
+          | "" -> None
+          | _ -> 
+            (
+              let c = String.get s 0 in
+              if c = ' ' || c = '\t' || c = '\n'
+              then 
+                (if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
+                else Some (String.sub s 1 (String.length s - 1), from_string acc))
+              else if is_digit c then (aux (String.sub s 1 (String.length s - 1)) (acc ^ (String.make 1 c)))
+              else None
+            )
+              (* (aux (String.sub s 1 (String.length s - 1)) (acc ^ (String.make 1 c))) *)
+            
+            
+        in aux s "")
+      let plus x y = x + y
+      let times x y = x * y
+   end
+
+module Int_Eval = Eval(Int_Data)
+
+
+
+  (* check if a char is an operator *)
+(* Int_Eval.eval "2 3 +"
+Int_Eval.eval "2@"
+Int_Eval.eval "2@ 3" *)
 
 (* remove this comment and fill in:
 
