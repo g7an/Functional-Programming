@@ -342,6 +342,8 @@ module type Data = sig
   val times : t -> t -> t
 end
 
+  
+
 (* The Evaluator for this simple language is then a functor of this type.
    If the input cannot be parsed, `eval` will return `Error "string"`, otherwise it will
    return `Some(t-value)`.
@@ -365,40 +367,77 @@ end
 
 (* Uncomment this code and fill in the ... *)
 (* print all the values in the list *)
-
+(* check if a char is digit from 0 to 9 *)
+  let is_digit c = 
+    match c with
+    | '0'..'9' -> true
+    | _ -> false
    module Eval : Eval = functor (Data : Data) -> struct
       type t = Data.t
-  
+
       let eval s = 
-        let rec aux s acc =
+        (* let rec aux s acc =
           let next = Data.next s in
           match next with
           | None -> Ok acc
           | Some (s', t) -> 
-            print_string (s' ^ "\n"); 
-            match s' with
+            print_string (Data.to_string t ^ "\n"); 
               (* | "+" -> print_char '+'; aux (String.sub s' 1 (String.length s' - 1)) (Data.plus t acc)
               | "*" -> print_char '*'; aux (String.sub s' 1 (String.length s' - 1)) (Data.times t acc) *)
-              | _ -> aux s' (t)
-        in aux s (Data.from_string "0")
+              aux s' (t)
+        in aux s (Data.from_string "0") *)
+        
+          (* Int_Eval.eval "1 5 2 * +" *)
+          let rec aux s stack = 
+            (* print_string (s ^ "\n"); *)
+            let next = Data.next s in
+            match next with 
+            | None -> 
+              (print_string (s^ " None\n");
+                match s with 
+              | "" -> if Stack.length stack = 1 then Ok (Stack.pop stack) else Error "unmatched" 
+              | _ -> 
+                (let s_trimmed = String.trim s in
+                let c = String.get s_trimmed 0 in
+                match c with 
+                | '+' ->
+                  if Stack.length stack = 1 then Error "unmatched +"
+                  else 
+                    (let t1 = Stack.pop stack in
+                    let t2 = Stack.pop stack in
+                    let t3 = Data.plus t1 t2 in
+                    Stack.push t3 stack;
+                    aux (String.sub s_trimmed 1 (String.length s_trimmed - 1)) stack)
+                 
+                | '*' ->
+                  if Stack.length stack = 1 then Error "unmatched *"
+                  else
+                    (let t1 = Stack.pop stack in
+                    let t2 = Stack.pop stack in
+                    let t3 = Data.times t1 t2 in
+                    Stack.push t3 stack;
+                    aux (String.sub s_trimmed 1 (String.length s_trimmed - 1)) stack)
+                | _ -> if (is_digit s.[0]) then Error "unmatched _" else Error "illegal character"))
+                  
 
-        (* let rec aux s stack = 
-          match Data.next s with 
-          | None ->  *)
+                  (* if c = '+' || c = '*' then 
+                    if (Stack.is_empty stack || Stack.length stack = 1) then Error "unmatched"
+                    else (let t1 = Stack.pop stack in
+                          let t2 = Stack.pop stack in
+                          if c = '+' then (Stack.push (Data.plus t1 t2) stack)
+                          else Stack.push (Data.times t1 t2) stack;
+                          aux (String.sub s 1 (String.length s - 1)) stack)
+                  else Error "illegal character" *)
+                
+                (* if (Stack.is_empty stack) then Error "illegal stack" else Ok (Stack.pop stack) *)
+            | Some (s', t) -> 
+              print_string "Some\n";
+              (* match s' with *)
+              (* | "+" -> Stack.push (Data.plus (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack
+              | "*" -> Stack.push (Data.times (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack *)
+              print_string (Data.to_string t ^ "\n"); (Stack.push t stack); aux s' stack
+            in aux s (Stack.create ())
             
-
-
-        (* We will have only `+` and `*` binary operations, will just parse a string rather than reading from a stream, 
-  and will use postfix (aka RPN) notation for operators: "1 2 +" will return 3. *)
-        (* let rec aux s stack = 
-          match Data.next s with
-          | None -> Ok (List.hd stack)
-          | Some (s', t) -> 
-            match s' with
-            | "+" -> aux (String.sub s' 1 (String.length s' - 1)) (Data.plus (List.hd stack) (List.nth stack 1) :: (List.tl (List.tl stack)))
-            | "*" -> aux (String.sub s' 1 (String.length s' - 1)) (Data.times (List.hd stack) (List.nth stack 1) :: (List.tl (List.tl stack)))
-            | _ -> aux s' (t :: stack)
-        in aux s [] *)
    end
 
 
@@ -431,13 +470,9 @@ end
        we encountered an illegal character like `@`, we encountered an operator, or we encountered an illegal type.
        An illegal type is defined based on what kind of concrete Data we are implementing. See more below on Int_Data and Rat_Data
 *)
-(* check if a char is digit from 0 to 9 *)
-  let is_digit c = 
-    match c with
-    | '0'..'9' -> true
-    | _ -> false
 
-    
+
+
    module Int_Data: Data with type t = int = struct
       type t = int
 
@@ -455,12 +490,15 @@ end
               then 
                 (if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
                 else Some (String.sub s 1 (String.length s - 1), from_string acc))
-              else if is_digit c then (aux (String.sub s 1 (String.length s - 1)) (acc ^ (String.make 1 c)))
+              else if is_digit c then 
+                (* make sure case "1 2+" is valid *)
+                let get_option_of_next_char = (aux (String.sub s 1 (String.length s - 1)) (acc ^ (String.make 1 c))) in 
+                if get_option_of_next_char = None then Some (String.sub s 1 (String.length s - 1), from_string (acc ^ (String.make 1 c))) else get_option_of_next_char
+              else if c = '-' then 
+                if acc = "" then (aux (String.sub s 1 (String.length s - 1)) (acc ^ (String.make 1 c)))
+                else None
               else None
             )
-              (* (aux (String.sub s 1 (String.length s - 1)) (acc ^ (String.make 1 c))) *)
-            
-            
         in aux s "")
       let plus x y = x + y
       let times x y = x * y
@@ -471,9 +509,15 @@ module Int_Eval = Eval(Int_Data)
 
 
   (* check if a char is an operator *)
-(* Int_Eval.eval "2 3 +"
+(* 
+Int_Eval.eval "2 3 +" -> 5
 Int_Eval.eval "2@"
-Int_Eval.eval "2@ 3" *)
+Int_Eval.eval "2@ 3" 
+Int_Eval.eval "4 5 2 * + 5 +"
+Int_Eval.eval "1 5 2 * +" -> 11
+
+
+*)
 
 (* remove this comment and fill in:
 
