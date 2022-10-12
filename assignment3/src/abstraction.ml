@@ -47,17 +47,17 @@ module type Ord = sig
   val compare : t -> t -> int
 end
 
-(* Now for some applications we may need more operations than just comparison, 
-   and it is possible to extend the module type above for that purpose.  
-   Concretely, we would now like to make a module type `Interp` and enforce that instances of this type include the operations from `Ord` plus some new functions. 
-   We can do this using the `include` statement. 
+(* Now for some applications we may need more operations than just comparison,
+   and it is possible to extend the module type above for that purpose.
+   Concretely, we would now like to make a module type `Interp` and enforce that instances of this type include the operations from `Ord` plus some new functions.
+   We can do this using the `include` statement.
    `include` in OCaml modules is not dissimilar to C's `#include` in that you can think of it as pasting the contents of the specified module here verbatim. *)
 module type Interp = sig
+  include Ord
+  (* in effect copy/paste Ord's contents above here: the t and the compare *)
 
-  include Ord (* in effect copy/paste Ord's contents above here: the t and the compare *)
-
-  (* We will require in addition a function to linearly *interpolate* between two mappings.  
-     It takes two (in,out) mappings, plus a data item, and performs some form of interpolation to arrive a "reasonable" output for the data item.  
+  (* We will require in addition a function to linearly *interpolate* between two mappings.
+     It takes two (in,out) mappings, plus a data item, and performs some form of interpolation to arrive a "reasonable" output for the data item.
      We will see an example below. *)
   val interpolate : t * t -> t * t -> t -> t
 end
@@ -88,6 +88,7 @@ module type Cont_map = sig
   *)
   type key
   type value = key (* values are the same type as keys *)
+
   val empty : t
 
   (* lookup finds the value of a key and returns None if the key is not in the domain of the map. *)
@@ -114,12 +115,11 @@ module type Cont_map = sig
   (* Similarly glb_key returns the greatest lower bound key if it exists *)
   val glb_key : key -> t -> key option
 
-  (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.  
-     You should interpolate from the two keys nearest to the key provided here; the previous two functions will provide those keys.  
-     If the key here is not between two existing keys there is no interpolation to be done so return None.  
-     Note that if the key is in fact already in the mapping its value can directly be returned - there is no need to interpolate.  *)
+  (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.
+     You should interpolate from the two keys nearest to the key provided here; the previous two functions will provide those keys.
+     If the key here is not between two existing keys there is no interpolation to be done so return None.
+     Note that if the key is in fact already in the mapping its value can directly be returned - there is no need to interpolate. *)
   val interpolated_lookup : key -> t -> value option
-
 end
 
 (*
@@ -139,45 +139,67 @@ module Cont_dud (Key : Interp) : Cont_map = struct
   type value = Key.t
 
   let empty = []
-
   let lookup k m = List.assoc_opt k m
 
   let insert k v m =
-    let rec aux m = 
+    let rec aux m =
       match m with
-      | [] -> [(k, v)]
-      | (k',v')::t -> if Key.compare k k' = 0 then (k,v)::t else (k',v')::(aux t)
-    in aux m
+      | [] -> [ (k, v) ]
+      | (k', v') :: t ->
+          if Key.compare k k' = 0 then (k, v) :: t else (k', v') :: aux t
+    in
+    aux m
 
   let remove k m = (List.remove_assoc k m, List.assoc_opt k m)
 
-  let lub_key k m = 
-    let rec aux m = 
-      match m with
-      | [] -> None
-      | (k',_)::t -> if Key.compare k k' < 0 then aux t else Some k'
-    in aux m
+  let lub_key k m =
+    if lookup k m <> None then Some k
+    else
+      let rec aux m acc =
+        match m with
+        | [] -> if acc = k then None else Some acc
+        | (k', _) :: t ->
+            if Key.compare acc k = 0 then
+              if Key.compare k' k > 0 then aux t k' else aux t acc
+            else if Key.compare k' k > 0 && Key.compare k' acc <= 0 then
+              aux t k'
+            else aux t acc
+      in
+      aux m k
 
-  let glb_key k m = 
-    let rec aux m = 
-      match m with
-      | [] -> None
-      | (k',_)::t -> if Key.compare k k' > 0 then aux t else Some k'
-    in aux m
+  let glb_key k m =
+    (* if k is in m then Some k,
+       else let result equals to first k' that is smaller than k,
+       compare with all the k's in m, return some result *)
+    if lookup k m <> None then Some k
+    else
+      let rec aux m acc =
+        match m with
+        | [] -> if acc = k then None else Some acc
+        | (k', _) :: t ->
+            if Key.compare acc k = 0 then
+              if Key.compare k' k < 0 then aux t k' else aux t acc
+            else if Key.compare k' k < 0 && Key.compare k' acc >= 0 then
+              aux t k'
+            else aux t acc
+      in
+      aux m k
 
-  let interpolated_lookup k m = 
-    (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.  
-     You should interpolate from the two keys nearest to the key provided here; the previous two functions will provide those keys.  
-     If the key here is not between two existing keys there is no interpolation to be done so return None.  
-     Note that if the key is in fact already in the mapping its value can directly be returned - there is no need to interpolate.  *)
+  let interpolated_lookup k m =
+    (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.
+       You should interpolate from the two keys nearest to the key provided here; the previous two functions will provide those keys.
+       If the key here is not between two existing keys there is no interpolation to be done so return None.
+       Note that if the key is in fact already in the mapping its value can directly be returned - there is no need to interpolate. *)
     let glb = glb_key k m in
     let lub = lub_key k m in
-    match glb, lub with
+    match (glb, lub) with
     | None, _ -> None
     | _, None -> None
-    | Some glb, Some lub -> 
-      if Key.compare glb lub = 0 then Some (List.assoc k m)
-      else Some (Key.interpolate (glb, List.assoc glb m) (lub, List.assoc lub m) k)
+    | Some glb, Some lub ->
+        if Key.compare glb lub = 0 then Some (List.assoc k m)
+        else
+          Some
+            (Key.interpolate (glb, List.assoc glb m) (lub, List.assoc lub m) k)
 end
 
 (*
@@ -197,7 +219,8 @@ module Float_interp : Interp with type t = float = struct
 
   let compare = Float.compare
 
-  let interpolate (x1,y1) (x2,y2) x = y1 +. ((x -. x1) /. (x2 -. x1)) *. (y2 -. y1)
+  let interpolate (x1, y1) (x2, y2) x =
+    y1 +. ((x -. x1) /. (x2 -. x1) *. (y2 -. y1))
 end
 
 (*
@@ -214,7 +237,8 @@ end
 
 *)
 
-module Cont_map (Key : Interp) : Cont_map with type key = Key.t = struct (* CHANGE this line this time to make it work *)
+module Cont_map (Key : Interp) : Cont_map with type key = Key.t = struct
+  (* CHANGE this line this time to make it work *)
   (*
     ... You can copy/paste your implementation from above here ... 
   *)
@@ -223,71 +247,69 @@ module Cont_map (Key : Interp) : Cont_map with type key = Key.t = struct (* CHAN
   type value = Key.t
 
   let empty = []
-
   let lookup k m = List.assoc_opt k m
 
-  let insert k v m = 
+  let insert k v m =
     (* if k is in m then update v' to v
-    else append (k,v) to m *)
-    let rec aux m = 
+       else append (k,v) to m *)
+    let rec aux m =
       match m with
-      | [] -> [(k, v)]
-      | (k',v')::t -> if Key.compare k k' = 0 then (k,v)::t else (k',v')::(aux t)
-    in aux m
+      | [] -> [ (k, v) ]
+      | (k', v') :: t ->
+          if Key.compare k k' = 0 then (k, v) :: t else (k', v') :: aux t
+    in
+    aux m
 
   let remove k m = (List.remove_assoc k m, List.assoc_opt k m)
 
-  let lub_key k m = 
+  let lub_key k m =
     if lookup k m <> None then Some k
     else
-      ( 
-        let rec aux m acc =
-          match m with
-          | [] -> if acc = k then None else Some acc
-          | (k', _)::t -> 
-            if Key.compare acc k = 0 then 
-              (if Key.compare k' k > 0 
-                  then aux t k' 
-               else aux t acc)
-            else if ((Key.compare k' k > 0) && (Key.compare k' acc <= 0)) 
-              then aux t k' 
+      let rec aux m acc =
+        match m with
+        | [] -> if acc = k then None else Some acc
+        | (k', _) :: t ->
+            if Key.compare acc k = 0 then
+              if Key.compare k' k > 0 then aux t k' else aux t acc
+            else if Key.compare k' k > 0 && Key.compare k' acc <= 0 then
+              aux t k'
             else aux t acc
-          in aux m k
-      )
+      in
+      aux m k
 
-  let glb_key k m = 
-    (* if k is in m then Some k, 
-    else let result equals to first k' that is smaller than k, 
-    compare with all the k's in m, return some result *)
+  let glb_key k m =
+    (* if k is in m then Some k,
+       else let result equals to first k' that is smaller than k,
+       compare with all the k's in m, return some result *)
     if lookup k m <> None then Some k
     else
-      ( 
-        let rec aux m acc =
-          match m with
-          | [] -> if acc = k then None else Some acc
-          | (k', _)::t -> if Key.compare acc k = 0 then 
-                            (if Key.compare k' k < 0 
-                                then aux t k' 
-                             else aux t acc)
-                          else if ((Key.compare k' k < 0) && (Key.compare k' acc >= 0)) 
-                            then aux t k' 
-                          else aux t acc
-        in aux m k
-      )
+      let rec aux m acc =
+        match m with
+        | [] -> if acc = k then None else Some acc
+        | (k', _) :: t ->
+            if Key.compare acc k = 0 then
+              if Key.compare k' k < 0 then aux t k' else aux t acc
+            else if Key.compare k' k < 0 && Key.compare k' acc >= 0 then
+              aux t k'
+            else aux t acc
+      in
+      aux m k
 
-  let interpolated_lookup k m = 
-    (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.  
-     You should interpolate from the two keys nearest to the key provided here; the previous two functions will provide those keys.  
-     If the key here is not between two existing keys there is no interpolation to be done so return None.  
-     Note that if the key is in fact already in the mapping its value can directly be returned - there is no need to interpolate.  *)
+  let interpolated_lookup k m =
+    (* Interpolated lookup should use the Key.interpolate function to return an interpolated value even if the key is not directly present.
+       You should interpolate from the two keys nearest to the key provided here; the previous two functions will provide those keys.
+       If the key here is not between two existing keys there is no interpolation to be done so return None.
+       Note that if the key is in fact already in the mapping its value can directly be returned - there is no need to interpolate. *)
     let glb = glb_key k m in
     let lub = lub_key k m in
-    match glb, lub with
+    match (glb, lub) with
     | None, _ -> None
     | _, None -> None
-    | Some glb, Some lub -> 
-      if Key.compare glb lub = 0 then Some (List.assoc k m)
-      else Some (Key.interpolate (glb, List.assoc glb m) (lub, List.assoc lub m) k)
+    | Some glb, Some lub ->
+        if Key.compare glb lub = 0 then Some (List.assoc k m)
+        else
+          Some
+            (Key.interpolate (glb, List.assoc glb m) (lub, List.assoc lub m) k)
 end
 
 (* With the above in place we can make a continuous map for floats *)
@@ -314,22 +336,22 @@ module Float_cont_map = Cont_map (Float_interp)
   
 *)
 
-(* 
-   Here is the module type for the underlying data.
-   The key function is next, it reads a `t` off of the front of the string,
-   and returns the remainder of the string as well as the `t` element.
+(*
+    Here is the module type for the underlying data.
+    The key function is next, it reads a `t` off of the front of the string,
+    and returns the remainder of the string as well as the `t` element.
 
-   Here are some clarifications on how next works.
-   1. whitespace (space, tab, newline) is a separator, the `t` value ends at that point.
-   2. `next` is only reponsible for reading a `t` off the front of the string
-   3. It should obey the "maximal munch" principle, read in as many characters as possible
-     whilst still making a `t`.  So for example on input `"12"` for `t = int` read in `12`, not `1`.
-     On "12@" next will return `12` plus remainder "@", `next` is not responsible for checking
-     for other errors except for illegal types (see point 5).
-   4. If `next` returned `None`, the output string remains unchanged from the input string
-   5. `next` will return `None` in 4 cases. If we reached the end of the string (no more `t` to read),
-       we encountered an illegal character like `@`, we encountered an operator, or we encountered an illegal type.
-       An illegal type is defined based on what kind of concrete Data we are implementing. See more below on Int_Data and Rat_Data
+    Here are some clarifications on how next works.
+    1. whitespace (space, tab, newline) is a separator, the `t` value ends at that point.
+    2. `next` is only reponsible for reading a `t` off the front of the string
+    3. It should obey the "maximal munch" principle, read in as many characters as possible
+      whilst still making a `t`.  So for example on input `"12"` for `t = int` read in `12`, not `1`.
+      On "12@" next will return `12` plus remainder "@", `next` is not responsible for checking
+      for other errors except for illegal types (see point 5).
+    4. If `next` returned `None`, the output string remains unchanged from the input string
+    5. `next` will return `None` in 4 cases. If we reached the end of the string (no more `t` to read),
+        we encountered an illegal character like `@`, we encountered an operator, or we encountered an illegal type.
+        An illegal type is defined based on what kind of concrete Data we are implementing. See more below on Int_Data and Rat_Data
 *)
 
 module type Data = sig
@@ -341,8 +363,6 @@ module type Data = sig
   val plus : t -> t -> t
   val times : t -> t -> t
 end
-
-  
 
 (* The Evaluator for this simple language is then a functor of this type.
    If the input cannot be parsed, `eval` will return `Error "string"`, otherwise it will
@@ -368,78 +388,87 @@ end
 (* Uncomment this code and fill in the ... *)
 (* print all the values in the list *)
 (* check if a char is digit from 0 to 9 *)
-  let is_digit c = 
-    match c with
-    | '0'..'9' -> true
-    | _ -> false
-   module Eval : Eval = functor (Data : Data) -> struct
-      type t = Data.t
+let is_digit c = match c with '0' .. '9' -> true | _ -> false
 
-      let eval s = 
-        (* let rec aux s acc =
-          let next = Data.next s in
-          match next with
-          | None -> Ok acc
-          | Some (s', t) -> 
-            print_string (Data.to_string t ^ "\n"); 
-              (* | "+" -> print_char '+'; aux (String.sub s' 1 (String.length s' - 1)) (Data.plus t acc)
-              | "*" -> print_char '*'; aux (String.sub s' 1 (String.length s' - 1)) (Data.times t acc) *)
-              aux s' (t)
-        in aux s (Data.from_string "0") *)
-        
-          (* Int_Eval.eval "1 5 2 * +" *)
-          let rec aux s stack = 
-            (* print_string (s ^ "\n"); *)
-            let next = Data.next s in
-            match next with 
-            | None -> 
-              (print_string (s^ " None\n");
-                match s with 
-              | "" -> if Stack.length stack = 1 then Ok (Stack.pop stack) else Error "unmatched" 
-              | _ -> 
-                (let s_trimmed = String.trim s in
+module Eval : Eval =
+functor
+  (Data : Data)
+  ->
+  struct
+    type t = Data.t
+
+    let eval s =
+      (* let rec aux s acc =
+           let next = Data.next s in
+           match next with
+           | None -> Ok acc
+           | Some (s', t) ->
+             print_string (Data.to_string t ^ "\n");
+               (* | "+" -> print_char '+'; aux (String.sub s' 1 (String.length s' - 1)) (Data.plus t acc)
+               | "*" -> print_char '*'; aux (String.sub s' 1 (String.length s' - 1)) (Data.times t acc) *)
+               aux s' (t)
+         in aux s (Data.from_string "0") *)
+
+      (* Int_Eval.eval "1 5 2 * +" *)
+      let rec aux s stack =
+        (* print_string (s ^ "\n"); *)
+        let next = Data.next s in
+        match next with
+        | None -> (
+            print_string (s ^ " None\n");
+            match s with
+            | "" ->
+                if Stack.length stack = 1 then Ok (Stack.pop stack)
+                else Error "unmatched"
+            | _ -> (
+                let s_trimmed = String.trim s in
                 let c = String.get s_trimmed 0 in
-                match c with 
+                match c with
                 | '+' ->
-                  if Stack.length stack = 1 then Error "unmatched +"
-                  else 
-                    (let t1 = Stack.pop stack in
-                    let t2 = Stack.pop stack in
-                    let t3 = Data.plus t1 t2 in
-                    Stack.push t3 stack;
-                    aux (String.sub s_trimmed 1 (String.length s_trimmed - 1)) stack)
-                 
+                    if Stack.length stack = 1 then Error "unmatched +"
+                    else
+                      let t1 = Stack.pop stack in
+                      let t2 = Stack.pop stack in
+                      let t3 = Data.plus t1 t2 in
+                      Stack.push t3 stack;
+                      aux
+                        (String.sub s_trimmed 1 (String.length s_trimmed - 1))
+                        stack
                 | '*' ->
-                  if Stack.length stack = 1 then Error "unmatched *"
-                  else
-                    (let t1 = Stack.pop stack in
-                    let t2 = Stack.pop stack in
-                    let t3 = Data.times t1 t2 in
-                    Stack.push t3 stack;
-                    aux (String.sub s_trimmed 1 (String.length s_trimmed - 1)) stack)
-                | _ -> if (is_digit s.[0]) then Error "unmatched _" else Error "illegal character"))
-                  
+                    if Stack.length stack = 1 then Error "unmatched *"
+                    else
+                      let t1 = Stack.pop stack in
+                      let t2 = Stack.pop stack in
+                      let t3 = Data.times t1 t2 in
+                      Stack.push t3 stack;
+                      aux
+                        (String.sub s_trimmed 1 (String.length s_trimmed - 1))
+                        stack
+                | _ ->
+                    (* if is_digit s.[0] then Error "unmatched _" *)
+                    Error "illegal character")
+            (* if c = '+' || c = '*' then
+                 if (Stack.is_empty stack || Stack.length stack = 1) then Error "unmatched"
+                 else (let t1 = Stack.pop stack in
+                       let t2 = Stack.pop stack in
+                       if c = '+' then (Stack.push (Data.plus t1 t2) stack)
+                       else Stack.push (Data.times t1 t2) stack;
+                       aux (String.sub s 1 (String.length s - 1)) stack)
+               else Error "illegal character" *)
 
-                  (* if c = '+' || c = '*' then 
-                    if (Stack.is_empty stack || Stack.length stack = 1) then Error "unmatched"
-                    else (let t1 = Stack.pop stack in
-                          let t2 = Stack.pop stack in
-                          if c = '+' then (Stack.push (Data.plus t1 t2) stack)
-                          else Stack.push (Data.times t1 t2) stack;
-                          aux (String.sub s 1 (String.length s - 1)) stack)
-                  else Error "illegal character" *)
-                
-                (* if (Stack.is_empty stack) then Error "illegal stack" else Ok (Stack.pop stack) *)
-            | Some (s', t) -> 
-              print_string "Some\n";
-              (* match s' with *)
-              (* | "+" -> Stack.push (Data.plus (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack
-              | "*" -> Stack.push (Data.times (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack *)
-              print_string (Data.to_string t ^ "\n"); (Stack.push t stack); aux s' stack
-            in aux s (Stack.create ())
-            
-   end
-
+            (* if (Stack.is_empty stack) then Error "illegal stack" else Ok (Stack.pop stack) *)
+            )
+        | Some (s', t) ->
+            print_string "Some\n";
+            (* match s' with *)
+            (* | "+" -> Stack.push (Data.plus (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack
+               | "*" -> Stack.push (Data.times (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack *)
+            print_string (Data.to_string t ^ "\n");
+            Stack.push t stack;
+            aux s' stack
+      in
+      aux s (Stack.create ())
+  end
 
 (* b. Make Int_Data and Rat_Data modules for parsing integers and rationals.
 
@@ -453,70 +482,186 @@ end
 *)
 
 (* remove this comment and fill in: *)
-(* 
-   Here is the module type for the underlying data.
-   The key function is next, it reads a `t` off of the front of the string,
-   and returns the remainder of the string as well as the `t` element.
+(*
+    Here is the module type for the underlying data.
+    The key function is next, it reads a `t` off of the front of the string,
+    and returns the remainder of the string as well as the `t` element.
 
-   Here are some clarifications on how next works.
-   1. whitespace (space, tab, newline) is a separator, the `t` value ends at that point.
-   2. `next` is only reponsible for reading a `t` off the front of the string
-   3. It should obey the "maximal munch" principle, read in as many characters as possible
-     whilst still making a `t`.  So for example on input `"12"` for `t = int` read in `12`, not `1`.
-     On "12@" next will return `12` plus remainder "@", `next` is not responsible for checking
-     for other errors except for illegal types (see point 5).
-   4. If `next` returned `None`, the output string remains unchanged from the input string
-   5. `next` will return `None` in 4 cases. If we reached the end of the string (no more `t` to read),
-       we encountered an illegal character like `@`, we encountered an operator, or we encountered an illegal type.
-       An illegal type is defined based on what kind of concrete Data we are implementing. See more below on Int_Data and Rat_Data
+    Here are some clarifications on how next works.
+    1. whitespace (space, tab, newline) is a separator, the `t` value ends at that point.
+    2. `next` is only reponsible for reading a `t` off the front of the string
+    3. It should obey the "maximal munch" principle, read in as many characters as possible
+      whilst still making a `t`.  So for example on input `"12"` for `t = int` read in `12`, not `1`.
+      On "12@" next will return `12` plus remainder "@", `next` is not responsible for checking
+      for other errors except for illegal types (see point 5).
+    4. If `next` returned `None`, the output string remains unchanged from the input string
+    5. `next` will return `None` in 4 cases. If we reached the end of the string (no more `t` to read),
+        we encountered an illegal character like `@`, we encountered an operator, or we encountered an illegal type.
+        An illegal type is defined based on what kind of concrete Data we are implementing. See more below on Int_Data and Rat_Data
 *)
 
+module Int_Data : Data with type t = int = struct
+  type t = int
+
+  let from_string s = int_of_string s
+  let to_string i = string_of_int i
+
+  let next s =
+    (* return the next string separated by whitespace *)
+    let rec aux s acc =
+      match s with
+      | "" -> None
+      | _ ->
+          let c = String.get s 0 in
+          if c = ' ' || c = '\t' || c = '\n' then
+            if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
+            else Some (String.sub s 1 (String.length s - 1), from_string acc)
+          else if is_digit c then
+            (* make sure case "1 2+" is valid *)
+            let get_option_of_next_char =
+              aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+            in
+            if get_option_of_next_char = None then
+              Some
+                ( String.sub s 1 (String.length s - 1),
+                  from_string (acc ^ String.make 1 c) )
+            else get_option_of_next_char
+          else if c = '-' then
+            if acc = "" then
+              aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+            else None
+          else None
+    in
+    aux s ""
+
+  let plus x y = x + y
+  let times x y = x * y
+end
+
+module Int_Eval = Eval (Int_Data)
+
+module type Fraction = sig
+  (* A fraction is a rational number p/q, where q != 0.*)
+  type t
+
+  (* [make n d] is n/d. Requires d != 0. *)
+  val make : int -> int -> t
+
+  val numerator : t -> int
+  val denominator : t -> int
+  val to_string : t -> string
+  val to_float : t -> float
+  val to_simple_fraction : t -> t
+
+  val add : t -> t -> t
+  val mul : t -> t -> t
+end
+
+let rec gcd (n: int) (m: int): int = 
+	match n with
+		| 0 -> m
+		| n -> match m with
+			| 0 -> n
+			| m -> gcd (m) (n mod m);;
 
 
-   module Int_Data: Data with type t = int = struct
-      type t = int
+module PairFraction = struct
+  type t = int * int
+  let to_simple_fraction (n, d) =
+    let gcd = gcd n d in
+    (n / gcd, d / gcd)
 
-      let from_string s = int_of_string s
-      let to_string i = string_of_int i
-      let next s = 
-        (* return the next string separated by whitespace *)
-        (let rec aux s acc = 
-          match s with
-          | "" -> None
-          | _ -> 
-            (
-              let c = String.get s 0 in
-              if c = ' ' || c = '\t' || c = '\n'
-              then 
-                (if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
-                else Some (String.sub s 1 (String.length s - 1), from_string acc))
-              else if is_digit c then 
-                (* make sure case "1 2+" is valid *)
-                let get_option_of_next_char = (aux (String.sub s 1 (String.length s - 1)) (acc ^ (String.make 1 c))) in 
-                if get_option_of_next_char = None then Some (String.sub s 1 (String.length s - 1), from_string (acc ^ (String.make 1 c))) else get_option_of_next_char
-              else if c = '-' then 
-                if acc = "" then (aux (String.sub s 1 (String.length s - 1)) (acc ^ (String.make 1 c)))
-                else None
-              else None
-            )
-        in aux s "")
-      let plus x y = x + y
-      let times x y = x * y
-   end
+  let make n d = if d != 0 then (to_simple_fraction (n, d)) else failwith "denominator cannot be 0"
+  let numerator (n, _) = n
+  let denominator (_, d) = d
 
-module Int_Eval = Eval(Int_Data)
+  let to_string (n, d) = string_of_int n ^ "/" ^ string_of_int d
 
+  let to_float (n, d) = float_of_int n /. float_of_int d
+  
 
+  let add (n1, d1) (n2, d2) = to_simple_fraction (n1 * d2 + n2 * d1, d1 * d2)
 
-  (* check if a char is an operator *)
-(* 
-Int_Eval.eval "2 3 +" -> 5
-Int_Eval.eval "2@"
-Int_Eval.eval "2@ 3" 
-Int_Eval.eval "4 5 2 * + 5 +"
-Int_Eval.eval "1 5 2 * +" -> 11
+  let mul (n1, d1) (n2, d2) = to_simple_fraction (n1 * n2, d1 * d2)
 
+  
+end
 
+module Rat_Data : Data with type t = PairFraction.t = struct
+  type t = PairFraction.t
+
+  let from_string s =
+    let split = String.split_on_char '/' s in
+    match split with
+    | [ n; d ] -> PairFraction.make (int_of_string n) (int_of_string d)
+    | _ -> failwith "invalid input"
+
+  let to_string t = PairFraction.to_string t
+
+  let next s =
+    (* return the next string separated by whitespace *)
+    let rec aux s acc =
+      match s with
+      | "" -> None
+      | _ ->
+          let c = String.get s 0 in
+          if c = ' ' || c = '\t' || c = '\n' then
+            if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
+            else Some (String.sub s 1 (String.length s - 1), from_string acc)
+          else if is_digit c || c = '/' then 
+            let get_option_of_next_char =
+              aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+            in
+            if get_option_of_next_char = None then
+              Some
+                ( String.sub s 1 (String.length s - 1),
+                  from_string (acc ^ String.make 1 c) )
+            else get_option_of_next_char
+          else
+            None
+          (* if c = ' ' || c = '\t' || c = '\n' then
+            if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
+            else Some (String.sub s 1 (String.length s - 1), from_string acc)
+          else if is_digit c then
+            (* make sure case "1 2+" is valid *)
+            let get_option_of_next_char =
+              aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+            in
+            if get_option_of_next_char = None then
+              Some
+                ( String.sub s 1 (String.length s - 1),
+                  from_string (acc ^ String.make 1 c) )
+            else get_option_of_next_char
+          else if c = '-' then
+            if acc = "" then
+              aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+            else None
+          else if c = '/' then
+            if acc = "" then None
+            else
+              let get_option_of_next_char =
+                aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+              in
+              if get_option_of_next_char = None then
+                Some
+                  ( String.sub s 1 (String.length s - 1),
+                    from_string (acc ^ String.make 1 c) )
+              else get_option_of_next_char
+          else None *)
+    in
+    aux s ""
+
+  let plus x y = PairFraction.add x y
+  let times x y = PairFraction.mul x y
+end
+module Rat_Eval = Eval(Rat_Data)
+(* check if a char is an operator *)
+(*
+   Int_Eval.eval "2 3 +" -> 5
+   Int_Eval.eval "2@"
+   Int_Eval.eval "2@ 3"
+   Int_Eval.eval "4 5 2 * + 5 +"
+   Int_Eval.eval "1 5 2 * +" -> 11
 *)
 
 (* remove this comment and fill in:
