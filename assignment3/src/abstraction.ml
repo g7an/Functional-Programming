@@ -129,8 +129,9 @@ end
   Note this version will in fact not work properly due to the types, so we call it `Cont_dud`.  A minor tweak below will fix it.
 
 *)
-
+[@@@coverage off]
 module Cont_dud (Key : Interp) : Cont_map = struct
+
   (*
     ... Put implementation here ... will be a type error until you fill in ..
   *)
@@ -201,7 +202,7 @@ module Cont_dud (Key : Interp) : Cont_map = struct
           Some
             (Key.interpolate (glb, List.assoc glb m) (lub, List.assoc lub m) k)
 end
-
+[@@@coverage on]
 (*
   Subtle point: "Over-encapsulation"
 
@@ -415,7 +416,8 @@ functor
         let next = Data.next s in
         match next with
         | None -> (
-            print_string (s ^ " None\n");
+            (* print_string (s ^ " None\n"); *)
+            print_string (" None\n");
             match s with
             | "" ->
                 if Stack.length stack = 1 then Ok (Stack.pop stack)
@@ -463,7 +465,7 @@ functor
             (* match s' with *)
             (* | "+" -> Stack.push (Data.plus (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack
                | "*" -> Stack.push (Data.times (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack *)
-            print_string (Data.to_string t ^ "\n");
+            (* print_string (Data.to_string t ^ "\n"); *)
             Stack.push t stack;
             aux s' stack
       in
@@ -558,6 +560,7 @@ module type Fraction = sig
 end
 
 let rec gcd (n: int) (m: int): int = 
+  (* compare n and m and find the larger one  *)
 	match n with
 		| 0 -> m
 		| n -> match m with
@@ -568,8 +571,15 @@ let rec gcd (n: int) (m: int): int =
 module PairFraction = struct
   type t = int * int
   let to_simple_fraction (n, d) =
-    let gcd = gcd n d in
-    (n / gcd, d / gcd)
+    let helper n d sign = 
+      let sign = (if n * d >= 0 then sign else -sign) in
+      let n = (if n < 0 then -n else n) in
+      let d = (if d < 0 then -d else d) in
+      let gcd = gcd n d in
+      if n = 0 then (0, 1) else
+      (sign * n / gcd, d / gcd)
+    in
+    helper n d 1
 
   let make n d = if d != 0 then (to_simple_fraction (n, d)) else failwith "denominator cannot be 0"
   let numerator (n, _) = n
@@ -593,7 +603,10 @@ module Rat_Data : Data with type t = PairFraction.t = struct
   let from_string s =
     let split = String.split_on_char '/' s in
     match split with
-    | [ n; d ] -> PairFraction.make (int_of_string n) (int_of_string d)
+    | [ n; d ] -> 
+        if n <> "" && d <> "" then 
+          PairFraction.make (int_of_string n) (int_of_string d) 
+        else failwith "invalid input"
     | _ -> failwith "invalid input"
 
   let to_string t = PairFraction.to_string t
@@ -604,19 +617,31 @@ module Rat_Data : Data with type t = PairFraction.t = struct
       match s with
       | "" -> None
       | _ ->
+          (* print_string (acc ^ "\n"); *)
           let c = String.get s 0 in
           if c = ' ' || c = '\t' || c = '\n' then
             if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
-            else Some (String.sub s 1 (String.length s - 1), from_string acc)
-          else if is_digit c || c = '/' then 
-            let get_option_of_next_char =
-              aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
-            in
-            if get_option_of_next_char = None then
-              Some
-                ( String.sub s 1 (String.length s - 1),
-                  from_string (acc ^ String.make 1 c) )
+            else try Some (String.sub s 1 (String.length s - 1), from_string acc) with _ -> None
+          else if is_digit c then 
+              let get_option_of_next_char =
+                aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+              in
+              if get_option_of_next_char = None then
+              try Some (String.sub s 1 (String.length s - 1), from_string (acc ^ String.make 1 c)) with _ -> None
             else get_option_of_next_char
+          else if c = '-' then
+            if acc = "" then
+              aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+            else None
+          else if c = '/' then 
+            (* if the next char is digit then continue else None *)
+            if String.length s > 1 then
+              let next_char = String.get s 1 in
+              if is_digit next_char then
+                aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
+              else None
+            else None
+          
           else
             None
           (* if c = ' ' || c = '\t' || c = '\n' then
@@ -654,6 +679,7 @@ module Rat_Data : Data with type t = PairFraction.t = struct
   let plus x y = PairFraction.add x y
   let times x y = PairFraction.mul x y
 end
+
 module Rat_Eval = Eval(Rat_Data)
 (* check if a char is an operator *)
 (*
