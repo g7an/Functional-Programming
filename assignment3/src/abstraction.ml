@@ -3,7 +3,7 @@
 FPSE Assignment 3
 
 Name                  : Shuyao Tan
-List of Collaborators :
+List of Collaborators : Tingyao Li
 
 Please make a good faith effort at listing people you discussed any problems with here, as per the course academic integrity policy.  
 
@@ -130,8 +130,8 @@ end
 
 *)
 [@@@coverage off]
-module Cont_dud (Key : Interp) : Cont_map = struct
 
+module Cont_dud (Key : Interp) : Cont_map = struct
   (*
     ... Put implementation here ... will be a type error until you fill in ..
   *)
@@ -202,7 +202,9 @@ module Cont_dud (Key : Interp) : Cont_map = struct
           Some
             (Key.interpolate (glb, List.assoc glb m) (lub, List.assoc lub m) k)
 end
+
 [@@@coverage on]
+
 (*
   Subtle point: "Over-encapsulation"
 
@@ -399,25 +401,10 @@ functor
     type t = Data.t
 
     let eval s =
-      (* let rec aux s acc =
-           let next = Data.next s in
-           match next with
-           | None -> Ok acc
-           | Some (s', t) ->
-             print_string (Data.to_string t ^ "\n");
-               (* | "+" -> print_char '+'; aux (String.sub s' 1 (String.length s' - 1)) (Data.plus t acc)
-               | "*" -> print_char '*'; aux (String.sub s' 1 (String.length s' - 1)) (Data.times t acc) *)
-               aux s' (t)
-         in aux s (Data.from_string "0") *)
-
-      (* Int_Eval.eval "1 5 2 * +" *)
       let rec aux s stack =
-        (* print_string (s ^ "\n"); *)
         let next = Data.next s in
         match next with
         | None -> (
-            (* print_string (s ^ " None\n"); *)
-            print_string (" None\n");
             match s with
             | "" ->
                 if Stack.length stack = 1 then Ok (Stack.pop stack)
@@ -427,7 +414,7 @@ functor
                 let c = String.get s_trimmed 0 in
                 match c with
                 | '+' ->
-                    if Stack.length stack = 1 then Error "unmatched +"
+                    if Stack.length stack = 1 then Error "unmatched"
                     else
                       let t1 = Stack.pop stack in
                       let t2 = Stack.pop stack in
@@ -437,7 +424,7 @@ functor
                         (String.sub s_trimmed 1 (String.length s_trimmed - 1))
                         stack
                 | '*' ->
-                    if Stack.length stack = 1 then Error "unmatched *"
+                    if Stack.length stack = 1 then Error "unmatched"
                     else
                       let t1 = Stack.pop stack in
                       let t2 = Stack.pop stack in
@@ -446,26 +433,8 @@ functor
                       aux
                         (String.sub s_trimmed 1 (String.length s_trimmed - 1))
                         stack
-                | _ ->
-                    (* if is_digit s.[0] then Error "unmatched _" *)
-                    Error "illegal character")
-            (* if c = '+' || c = '*' then
-                 if (Stack.is_empty stack || Stack.length stack = 1) then Error "unmatched"
-                 else (let t1 = Stack.pop stack in
-                       let t2 = Stack.pop stack in
-                       if c = '+' then (Stack.push (Data.plus t1 t2) stack)
-                       else Stack.push (Data.times t1 t2) stack;
-                       aux (String.sub s 1 (String.length s - 1)) stack)
-               else Error "illegal character" *)
-
-            (* if (Stack.is_empty stack) then Error "illegal stack" else Ok (Stack.pop stack) *)
-            )
+                | _ -> Error "illegal character"))
         | Some (s', t) ->
-            print_string "Some\n";
-            (* match s' with *)
-            (* | "+" -> Stack.push (Data.plus (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack
-               | "*" -> Stack.push (Data.times (Stack.pop stack) (Stack.pop stack)) stack; aux (String.sub s' 1 (String.length s' - 1)) stack *)
-            (* print_string (Data.to_string t ^ "\n"); *)
             Stack.push t stack;
             aux s' stack
       in
@@ -483,7 +452,6 @@ functor
       Additionally, for whole numbers, format them with the number divided by 1, e.g. "-1/1". "0/1", "1/1", "2/1".
 *)
 
-(* remove this comment and fill in: *)
 (*
     Here is the module type for the underlying data.
     The key function is next, it reads a `t` off of the front of the string,
@@ -542,59 +510,49 @@ end
 
 module Int_Eval = Eval (Int_Data)
 
+(* Referred to: https://github.com/cs3110/textbook-solutions/blob/main/chapter5.ml *)
 module type Fraction = sig
   (* A fraction is a rational number p/q, where q != 0.*)
   type t
 
   (* [make n d] is n/d. Requires d != 0. *)
   val make : int -> int -> t
-
   val numerator : t -> int
   val denominator : t -> int
   val to_string : t -> string
   val to_float : t -> float
   val to_simple_fraction : t -> t
-
   val add : t -> t -> t
   val mul : t -> t -> t
 end
 
-let rec gcd (n: int) (m: int): int = 
+let rec gcd (n : int) (m : int) : int =
   (* compare n and m and find the larger one  *)
-	match n with
-		| 0 -> m
-		| n -> match m with
-			| 0 -> n
-			| m -> gcd (m) (n mod m);;
-
+  match n with 0 -> m | n -> ( match m with 0 -> n | m -> gcd m (n mod m))
 
 module PairFraction = struct
   type t = int * int
+
   let to_simple_fraction (n, d) =
-    let helper n d sign = 
-      let sign = (if n * d >= 0 then sign else -sign) in
-      let n = (if n < 0 then -n else n) in
-      let d = (if d < 0 then -d else d) in
+    let helper n d sign =
+      let sign = if n * d >= 0 then sign else -sign in
+      let n = if n < 0 then -n else n in
+      let d = if d < 0 then -d else d in
       let gcd = gcd n d in
-      if n = 0 then (0, 1) else
-      (sign * n / gcd, d / gcd)
+      if n = 0 then (0, d) else (sign * n / gcd, d / gcd)
     in
     helper n d 1
 
-  let make n d = if d != 0 then (to_simple_fraction (n, d)) else failwith "denominator cannot be 0"
+  let make n d =
+    if d != 0 then to_simple_fraction (n, d)
+    else failwith "denominator cannot be 0"
+
   let numerator (n, _) = n
   let denominator (_, d) = d
-
   let to_string (n, d) = string_of_int n ^ "/" ^ string_of_int d
-
   let to_float (n, d) = float_of_int n /. float_of_int d
-  
-
-  let add (n1, d1) (n2, d2) = to_simple_fraction (n1 * d2 + n2 * d1, d1 * d2)
-
+  let add (n1, d1) (n2, d2) = to_simple_fraction ((n1 * d2) + (n2 * d1), d1 * d2)
   let mul (n1, d1) (n2, d2) = to_simple_fraction (n1 * n2, d1 * d2)
-
-  
 end
 
 module Rat_Data : Data with type t = PairFraction.t = struct
@@ -603,9 +561,9 @@ module Rat_Data : Data with type t = PairFraction.t = struct
   let from_string s =
     let split = String.split_on_char '/' s in
     match split with
-    | [ n; d ] -> 
-        if n <> "" && d <> "" then 
-          PairFraction.make (int_of_string n) (int_of_string d) 
+    | [ n; d ] ->
+        if n <> "" && d <> "" then
+          PairFraction.make (int_of_string n) (int_of_string d)
         else failwith "invalid input"
     | _ -> failwith "invalid input"
 
@@ -621,58 +579,35 @@ module Rat_Data : Data with type t = PairFraction.t = struct
           let c = String.get s 0 in
           if c = ' ' || c = '\t' || c = '\n' then
             if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
-            else try Some (String.sub s 1 (String.length s - 1), from_string acc) with _ -> None
-          else if is_digit c then 
-              let get_option_of_next_char =
-                aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
-              in
-              if get_option_of_next_char = None then
-              try Some (String.sub s 1 (String.length s - 1), from_string (acc ^ String.make 1 c)) with _ -> None
-            else get_option_of_next_char
-          else if c = '-' then
-            if acc = "" then
-              aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
-            else None
-          else if c = '/' then 
-            (* if the next char is digit then continue else None *)
-            if String.length s > 1 then
-              let next_char = String.get s 1 in
-              if is_digit next_char then
-                aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
-              else None
-            else None
-          
-          else
-            None
-          (* if c = ' ' || c = '\t' || c = '\n' then
-            if acc = "" then aux (String.sub s 1 (String.length s - 1)) acc
-            else Some (String.sub s 1 (String.length s - 1), from_string acc)
+            else
+              try Some (String.sub s 1 (String.length s - 1), from_string acc)
+              with _ -> None
           else if is_digit c then
-            (* make sure case "1 2+" is valid *)
             let get_option_of_next_char =
               aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
             in
             if get_option_of_next_char = None then
-              Some
-                ( String.sub s 1 (String.length s - 1),
-                  from_string (acc ^ String.make 1 c) )
+              try
+                Some
+                  ( String.sub s 1 (String.length s - 1),
+                    from_string (acc ^ String.make 1 c) )
+              with _ -> None
             else get_option_of_next_char
           else if c = '-' then
             if acc = "" then
               aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
             else None
           else if c = '/' then
-            if acc = "" then None
-            else
-              let get_option_of_next_char =
-                aux (String.sub s 1 (String.length s - 1)) (acc ^ String.make 1 c)
-              in
-              if get_option_of_next_char = None then
-                Some
-                  ( String.sub s 1 (String.length s - 1),
-                    from_string (acc ^ String.make 1 c) )
-              else get_option_of_next_char
-          else None *)
+            (* if the next char is digit then continue else None *)
+            if String.length s > 1 then
+              let next_char = String.get s 1 in
+              if is_digit next_char then
+                aux
+                  (String.sub s 1 (String.length s - 1))
+                  (acc ^ String.make 1 c)
+              else None
+            else None
+          else None
     in
     aux s ""
 
@@ -680,38 +615,4 @@ module Rat_Data : Data with type t = PairFraction.t = struct
   let times x y = PairFraction.mul x y
 end
 
-module Rat_Eval = Eval(Rat_Data)
-(* check if a char is an operator *)
-(*
-   Int_Eval.eval "2 3 +" -> 5
-   Int_Eval.eval "2@"
-   Int_Eval.eval "2@ 3"
-   Int_Eval.eval "4 5 2 * + 5 +"
-   Int_Eval.eval "1 5 2 * +" -> 11
-*)
-
-(* remove this comment and fill in:
-
-   module Rat_Data ...
-*)
-
-(* With this we may now create evaluators for integers and rationals. *)
-
-(* Uncomment the below lines (unchanged) when you have the above modules defined.
-
-   module Int_Eval = Eval(Int_Data)
-
-   module Rat_Eval = Eval(Rat_Data)
-
-   At this point you should look at the types and see if you "hid too much"
-   as per the Dict example above; you might need some `with` declarations
-   here to solve the over-hiding problem.
-
-   Hint: this mostly depends on how you want to test your functions
-*)
-
-(*
-Int_Eval.eval "2 3 +" should now return `OK(5).  Make sure to 
-write a good array of such tests in `tests.ml` to make sure your
-implementation is working.
-*)
+module Rat_Eval = Eval (Rat_Data)

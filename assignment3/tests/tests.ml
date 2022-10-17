@@ -120,10 +120,10 @@ let test_eval _ =
   assert_equal (Ok 19) @@ (Int_Eval.eval "4 5 2 * + 5 +");
   assert_equal (Ok 11) @@ (Int_Eval.eval "1 5 2 * +");
   assert_equal (Ok 1) @@ (Int_Eval.eval "1");
-  assert_equal (Error "unmatched +") @@ (Int_Eval.eval "1 2++");
+  assert_equal (Error "unmatched") @@ (Int_Eval.eval "1 2++");
   assert_equal (Error "unmatched") @@ (Int_Eval.eval "1 2");
-  assert_equal (Error "unmatched +") @@ (Int_Eval.eval "1+");
-  assert_equal (Error "unmatched *") @@ (Int_Eval.eval "1 *");
+  assert_equal (Error "unmatched") @@ (Int_Eval.eval "1+");
+  assert_equal (Error "unmatched") @@ (Int_Eval.eval "1 *");
   assert_equal (Ok (-2)) @@ (Int_Eval.eval "-1 2 *");
   assert_equal (Ok (-2)) @@ (Int_Eval.eval "1 -2 *");
   assert_equal (Ok 0) @@ (Int_Eval.eval "0 -1 *");
@@ -133,7 +133,7 @@ let test_eval _ =
 
 let test_rat_from_string _ = 
   assert_equal (1, 2) @@ (Rat_Data.from_string "1/2");
-  assert_equal (0, 1) @@ (Rat_Data.from_string "0/2");
+  assert_equal (0, 2) @@ (Rat_Data.from_string "0/2");
   assert_equal (-1, 2) @@ (Rat_Data.from_string "-1/2");
   assert_equal (1, 2) @@ (Rat_Data.from_string "2/4");
   assert_raises (Failure "denominator cannot be 0") @@ (fun () -> Rat_Data.from_string "1/0");
@@ -165,22 +165,23 @@ let test_rat_plus _ =
   assert_equal (1, 2) @@ (Rat_Data.plus (1, 2) (0, 1));
   assert_equal (1, 1) @@ (Rat_Data.plus (1, 2) (1, 2));
   assert_equal (1, 2) @@ (Rat_Data.plus (1, 4) (1, 4));
-  assert_equal (0, 1) @@ (Rat_Data.plus (-1, 2) (1, 2));
-  assert_equal (0, 1) @@ (Rat_Data.plus (1, 2) (-1, 2))
+  assert_equal (0, 4) @@ (Rat_Data.plus (-1, 2) (1, 2));
+  assert_equal (0, 4) @@ (Rat_Data.plus (1, 2) (-1, 2))
 ;;
 
 let test_rat_times _ =
   assert_equal (1, 4) @@ (Rat_Data.times (1, 2) (1, 2));
   assert_equal (1, 4) @@ (Rat_Data.times (1, 2) (2, 4));
-  assert_equal (0, 1) @@ (Rat_Data.times (1, 2) (0, 1));
-  assert_equal (0, 1) @@ (Rat_Data.times (0, 1) (1, 2));
+  assert_equal (0, 2) @@ (Rat_Data.times (1, 2) (0, 1));
+  assert_equal (0, 2) @@ (Rat_Data.times (0, 1) (1, 2));
   assert_equal (-1, 4) @@ (Rat_Data.times (-1, 2) (1, 2));
   assert_equal (-1, 4) @@ (Rat_Data.times (1, 2) (-1, 2));;
 
 (* invariant test *)
-(* int_data.next will always return an integer on integers as string *)
-let plus_test x y = ("test plus" >:: (fun _ -> assert_equal( Int_Data.plus x y ) (x+y) ));; 
-let times_test x y = ("test times" >:: (fun _ -> assert_equal( Int_Data.times x y ) (x*y) ));;
+let plus_invariant_test x = ("test plus" >:: (fun _ -> assert_equal( Int_Data.plus x 0 ) (x) ));; 
+let plus_rat_invariant_test x = ("test plus for rational number" >:: (fun _ -> assert_equal( Rat_Data.plus x (0, 1) ) (x) ));; 
+let times_invariant_test x = ("test times" >:: (fun _ -> assert_equal( Int_Data.times x 1 ) (x) ));;
+let times_rat_invariant_test x = ("test times for rational number" >:: (fun _ -> assert_equal( Rat_Data.times x (1, 1) ) (x) ));; 
 let convert_test x = ("test to_string and from_string" >:: (fun _ -> assert_equal( Int_Data.to_string (Int_Data.from_string x) ) x ));;
 let rat_convert_test x = ("test to_string and from_string" >:: (fun _ -> assert_equal( Rat_Data.to_string (Rat_Data.from_string x) ) x ));;
 
@@ -194,15 +195,15 @@ let next_test str = ("test next" >:: (fun _ -> assert_equal( rec_next str ) [] )
 
 let test_invariant = "Invariant Checking" >::: 
   [
-    "Int_Data.plus x y = x + y" >::: List.map [(1, 2); (3, 4); (0, 5); (-6, 7); (8, 9)] ~f:(fun l -> match l with (x, y) -> plus_test x y);
-    "Int_Data.times x y = x * y" >::: List.map [(1, 2); (3, 4); (0, 5); (-6, 7); (8, 9)] ~f:(fun l -> match l with (x, y) -> times_test x y);
+    "Rat_Data.plus x 0 = x" >::: List.map [(1, 2); (3, 4); (0, 5); (-6, 7); (8, 9)] ~f:(fun l  -> plus_rat_invariant_test l);
+    "Rat_Data.times x y = x * y" >::: List.map [(1, 2); (3, 4); (0, 5); (-6, 7); (8, 9)] ~f:(fun l -> times_rat_invariant_test l);
+    "Int_Data.plus x 0 = x" >::: List.map [1; 2; 3; 4; 5; 6; -7; -8; 9; 20] ~f:(fun l -> plus_invariant_test l);
+    "Int_Data.times x 1 = x" >::: List.map [1; 2; 3; 4; 5; 6; -7; -8; 9; 20] ~f:(fun l -> times_invariant_test l);
     "Int_Data.to_string (Int_Data.from_string x) = x" >::: List.map ["12"; "234"; "30"; "-45"; "57890"; "6"; "-97"; "89"; "9"] ~f:convert_test;
     "Rat_Data.to_string (Rat_Data.from_string x) = x" >::: List.map ["1/2"; "3/4"; "6/7"; "8/9"; "1/1"; "-1/2"] ~f:rat_convert_test;
     "Int_Data.next str will always return an integer on integers as string" >::: List.map ["12 +"; "1 2+"; "1@"; "1"] ~f:next_test;
   ];;
   
-
-
 
 let part2_tests = "Part 2" >::: [
   "Aux function 1 - check char is digit" >:: test_is_digit;
@@ -219,9 +220,6 @@ let part2_tests = "Part 2" >::: [
   "Rat_Data function - times" >:: test_rat_times;
 ]
 
-(* let invariant_checking = "nvariant Checking" >::: [
-  "test plus" >:: test_plus_list
-] *)
 let series = "Assignment3 Tests" >::: 
 [ 
   part1_tests
