@@ -163,18 +163,28 @@ let sample (module R: Randomness) (b: 'a Bag.t): 'a option =
 
   "on the" ???
 
-  We will naturally make a poorer approximation of the true distribution, but it may be sufficient for some purposes anyway, and will be easier to estimate.  How can we estimate the actual distribution of words efficiently, then?
+  We will naturally make a poorer approximation of the true distribution, but it may be sufficient for some purposes anyway, and will be easier to estimate.  
+  How can we estimate the actual distribution of words efficiently, then?
   
-  We will need to take in some observed sequence of words or tokens, called a _corpus_.  Let's say we want to keep 2 words of context when predicting what comes next, based on the provided corpus. Then we can 
+  We will need to take in some observed sequence of words or tokens, called a _corpus_.  
+  Let's say we want to keep 2 words of context when predicting what comes next, based on the provided corpus. Then we can 
   just keep track of every 3-tuple of consecutive words in the input, and count how often they appear.
 
   For example, say we observe the triples
 
   ("take", "this", "boat"), ("this", "boat", "for"), ... ("on", "the", "water").
 
-  Then, if we index these properly, we can predict what should follow ("on", "the") by just sampling randomly from among all the tuples which started with that prefix, and using the last element of the tuple as our prediction.  Naturally, words which appear more frequently in the context specified should then be given more weight, and words which do not appear in our corpus after the given sequence will not be chosen at all, so our prediction should be a reasonable estimate for the empirical distribution.
+  Then, if we index these properly, we can predict what should follow ("on", "the") 
+  by just sampling randomly from among all the tuples which started with that prefix, 
+  and using the last element of the tuple as our prediction.  
+  Naturally, words which appear more frequently in the context specified should then be given more weight, 
+  and words which do not appear in our corpus after the given sequence will not be chosen at all, 
+  so our prediction should be a reasonable estimate for the empirical distribution.
 
-  If we instead count 5-tuples rather than 3-tuples, we can make better predictions with the greater context, which will then more closely match the true sequence properties. However, we will also be able to observe fewer unique 5-tuples overall than 3-tuples, which will mean we need greater amounts of data to properly use a larger n-gram size.
+  If we instead count 5-tuples rather than 3-tuples, we can make better predictions with the greater context, 
+  which will then more closely match the true sequence properties. 
+  However, we will also be able to observe fewer unique 5-tuples overall than 3-tuples, 
+  which will mean we need greater amounts of data to properly use a larger n-gram size.
 
 
   Feel free to read these useful resources to better understand n-grams:
@@ -183,7 +193,8 @@ let sample (module R: Randomness) (b: 'a Bag.t): 'a option =
   - https://medium.com/mti-technology/n-gram-language-model-b7c2fc322799
 
   
-  First define a module which holds our main functionality specific to a particular orderable type we'll call `Token`. These tokens could be words (strings) of course, but could also be numbers, or DNA base pairs, etc.
+  First define a module which holds our main functionality specific to a particular orderable type we'll call `Token`. 
+  These tokens could be words (strings) of course, but could also be numbers, or DNA base pairs, etc.
 
   We also need randomness here, so we will abstract over it as well.
 *)
@@ -195,17 +206,19 @@ module N_grams (Random: Randomness) (Token: Map.Key) = struct
   module Token_list_map : (Map.S with type Key.t = Token.t list) = 
     Map.Make (List_key (Token))
 ;;
-  (* remove ;; and fill in *)
 
   (*
-    Based on how n-grams work, we will represent a probability distribution as mapping from prefixes of size `n`, to tokens which followed this prefix in our training corpus. The more times any particular token follows a prefix, the more likely it is to follow it again.
+    Based on how n-grams work, we will represent a probability distribution as mapping from prefixes of size `n`, 
+    to tokens which followed this prefix in our training corpus. 
+    The more times any particular token follows a prefix, the more likely it is to follow it again.
 
     Don't change this type; it is a map from token lists to bags of tokens.
   *)
   type distribution = (Token.t Bag.t) Token_list_map.t
 
   (*
-    Given a positive integer `n` and a list of tokens, add each token to a new distribution as an element of the set corresponding to the (n-1)-gram which preceeds it.
+    Given a positive integer `n` and a list of tokens, 
+    add each token to a new distribution as an element of the set corresponding to the (n-1)-gram which preceeds it.
 
     e.g. (informally diagramming the map/bag of a `distribution`)
 
@@ -242,7 +255,36 @@ module N_grams (Random: Randomness) (Token: Map.Key) = struct
         }
   *)
   let ngrams (n: int) (l: Token.t list): distribution =
-    failwith "undefined"
+    let lists = chunks n l in 
+    (* build distribution by using (n-1) items in the list as key and the last item as value *)
+    let rec build_distribution (lists: Token.t list list) (d: distribution): distribution =
+      match lists with
+      | [] -> d
+      | list :: rest -> 
+        let value, key = split_last list in 
+        (* find if key is in d
+          if yes, add value to the bag
+          if no, insert key to the d and create a new bag with value *)
+        let new_bag =
+          match Token_list_map.find_exn d key with
+          | bag -> let _ = Bag.add bag value in bag
+          | exception Not_found_s _ -> 
+            let new_bag = Bag.create () in
+            let _ = Bag.add new_bag value
+          in new_bag
+        in
+        let new_d = Token_list_map.set d ~key ~data:new_bag in
+        build_distribution rest new_d
+        (* use key as the key to get the bag of values from the distribution
+        let bag = Token_list_map.find_opt key d |> Option.value ~default:Bag.empty in
+        (* add the value to the bag *)
+        let new_bag = Bag.add value bag in
+        (* add the new bag to the distribution *)
+        let new_distribution = Token_list_map.add key new_bag d in
+        build_distribution rest new_distribution *)
+    in
+    build_distribution lists Token_list_map.empty
+
 
   (*
 
