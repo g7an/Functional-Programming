@@ -2,7 +2,7 @@
 
 FPSE Assignment 4
  
-Name                  : 
+Name                  : Shuyao Tan
 List of Collaborators :
 
 *)
@@ -38,22 +38,26 @@ open Core
 
     chunks 3 [1; 2] = []
 *)
-(* get n items in a list *)
-let rec get_n_items n lst = 
+(* get n (positive integer) items in a list *)
+let rec get_n_items n lst =
   match lst with
   | [] -> []
-  | h::t -> if n = 1 then [h] else h::(get_n_items (n-1) t)
+  | h :: t ->
+      if n = 1 then [ h ]
+      else if n = 0 then failwith "n should be a positive integer"
+      else h :: get_n_items (n - 1) t
 
-let chunks (n: int) (l: 'a list): 'a list list =
-    let rec chunks_helper (n: int) (l: 'a list) (acc: 'a list list): 'a list list =
-        match l with
-        | [] -> acc
-        | hd::tl -> (
-            let sub_list = hd:: (get_n_items (n-1) tl)
-              in if List.length sub_list = n then chunks_helper n tl (acc@[sub_list]) else acc
-    )
-    in chunks_helper n l []
-
+let chunks (n : int) (l : 'a list) : 'a list list =
+  let rec chunks_helper (n : int) (l : 'a list) (acc : 'a list list) :
+      'a list list =
+    match l with
+    | [] -> acc
+    | hd :: tl ->
+        let sub_list = hd :: get_n_items (n - 1) tl in
+        if List.length sub_list = n then chunks_helper n tl (acc @ [ sub_list ])
+        else acc
+  in
+  chunks_helper n l []
 
 (*
   Exercise 2:
@@ -63,13 +67,14 @@ let chunks (n: int) (l: 'a list): 'a list list =
   E.G.
     split_last [1;2;3] = (3, [1;2])
 *)
-let split_last (l: 'a list): 'a * 'a list =
-    let rec split_last_helper (l: 'a list) (acc: 'a list): 'a * 'a list =
-        match l with
-          | [] -> failwith "empty list"
-          | hd::[] -> (hd, acc)
-          | hd::tl -> split_last_helper tl (acc@[hd])
-    in split_last_helper l []
+let split_last (l : 'a list) : 'a * 'a list =
+  let rec split_last_helper (l : 'a list) (acc : 'a list) : 'a * 'a list =
+    match l with
+    | [] -> failwith "empty list"
+    | [ hd ] -> (hd, acc)
+    | hd :: tl -> split_last_helper tl (acc @ [ hd ])
+  in
+  split_last_helper l []
 
 (*
   Exercise 3:
@@ -81,16 +86,14 @@ let split_last (l: 'a list): 'a * 'a list =
   Recall that the Map.Key module type needs a type `t`, a `compare` on it and the to/from s-expression conversions over `t`: 
   https://ocaml.org/p/core/v0.15.0/doc/Core/Map_intf/module-type-Key/index.html.
 *)
-module List_key (Elt: Map.Key): (Map.Key with type t = Elt.t list) = struct
+module List_key (Elt : Map.Key) : Map.Key with type t = Elt.t list = struct
   (*
     ... YOUR IMPLEMENTATION HERE ... 
   *)
   type t = Elt.t list
 
   let compare = List.compare Elt.compare
-
   let sexp_of_t = List.sexp_of_t Elt.sexp_of_t
-
   let t_of_sexp = List.t_of_sexp Elt.t_of_sexp
 end
 
@@ -130,82 +133,84 @@ end
   Similarly, sample can be invoked as e.g. `sample (module Random) ...`
 
 *)
-let sample (module R: Randomness) (b: 'a Bag.t): 'a option =
-    let len = Bag.length b in
-    if len = 0 then None
-    else
-        let index = R.int len in
-        let rec sample_helper (b: 'a Bag.t) (index: int): 'a option =
-            match Bag.choose b with
-            | None -> None
-            | Some elt ->
-              (
-                if index = 0 then Some (Bag.Elt.value elt)
-                else 
-                  (* remove elt in b and pass the mutated bag b into recursive call *)
-                  let _ = Bag.remove b elt in
-                  sample_helper b (index-1)
-              )
-        in sample_helper b index
+let sample (module R : Randomness) (b : 'a Bag.t) : 'a option =
+  let len = Bag.length b in
+  if len = 0 then None
+  else
+    let index = R.int len in
+    let rec sample_helper (b : 'a Bag.t) (index : int) : 'a option =
+      match Bag.choose b with
+      | None -> None
+      | Some elt ->
+          if index = 0 then Some (Bag.Elt.value elt)
+          else
+            (* remove elt in b and pass the mutated bag b into recursive call *)
+            let _ = Bag.remove b elt in
+            sample_helper b (index - 1)
+    in
+    sample_helper b index
 
 (* Exercise 5:
 
-  Fill out the skeleton of the module N_grams below to make a common probabilistic model of sequences, the n-gram model, also called the Markov model.
+   Fill out the skeleton of the module N_grams below to make a common probabilistic model of sequences, the n-gram model, also called the Markov model.
 
-  The general intuition is simple: if we want to be able to predict what comes next in a sequence of items, we can probably do so on the basis of the elements which preceeded it. Moreover, we can 
-  probably ignore parts of the sequence which came _far_ before the element we want to predict, and focus our attention on the immediately previous couple of items.
+   The general intuition is simple: if we want to be able to predict what comes next in a sequence of items,
+   we can probably do so on the basis of the elements which preceeded it. Moreover, we can
+   probably ignore parts of the sequence which came _far_ before the element we want to predict,
+   and focus our attention on the immediately previous couple of items.
 
-  Consider sentences of words in english text, a very common type of sequence to apply this approach to. If we are given that the word we want to predict came after:
-  
-  "take this boat for a spin out on the" ???
+   Consider sentences of words in english text,
+   a very common type of sequence to apply this approach to.
+   If we are given that the word we want to predict came after:
 
-  Then we could say that "water" is more likely than "town" to follow. If we have less context, say only 2 words:
+   "take this boat for a spin out on the" ???
 
-  "on the" ???
+   Then we could say that "water" is more likely than "town" to follow. If we have less context, say only 2 words:
 
-  We will naturally make a poorer approximation of the true distribution, but it may be sufficient for some purposes anyway, and will be easier to estimate.  
-  How can we estimate the actual distribution of words efficiently, then?
-  
-  We will need to take in some observed sequence of words or tokens, called a _corpus_.  
-  Let's say we want to keep 2 words of context when predicting what comes next, based on the provided corpus. Then we can 
-  just keep track of every 3-tuple of consecutive words in the input, and count how often they appear.
+   "on the" ???
 
-  For example, say we observe the triples
+   We will naturally make a poorer approximation of the true distribution,
+   but it may be sufficient for some purposes anyway, and will be easier to estimate.
+   How can we estimate the actual distribution of words efficiently, then?
 
-  ("take", "this", "boat"), ("this", "boat", "for"), ... ("on", "the", "water").
+   We will need to take in some observed sequence of words or tokens, called a _corpus_.
+   Let's say we want to keep 2 words of context when predicting what comes next, based on the provided corpus.
+   Then we can just keep track of every 3-tuple of consecutive words in the input, and count how often they appear.
 
-  Then, if we index these properly, we can predict what should follow ("on", "the") 
-  by just sampling randomly from among all the tuples which started with that prefix, 
-  and using the last element of the tuple as our prediction.  
-  Naturally, words which appear more frequently in the context specified should then be given more weight, 
-  and words which do not appear in our corpus after the given sequence will not be chosen at all, 
-  so our prediction should be a reasonable estimate for the empirical distribution.
+   For example, say we observe the triples
 
-  If we instead count 5-tuples rather than 3-tuples, we can make better predictions with the greater context, 
-  which will then more closely match the true sequence properties. 
-  However, we will also be able to observe fewer unique 5-tuples overall than 3-tuples, 
-  which will mean we need greater amounts of data to properly use a larger n-gram size.
+   ("take", "this", "boat"), ("this", "boat", "for"), ... ("on", "the", "water").
+
+   Then, if we index these properly, we can predict what should follow ("on", "the")
+   by just sampling randomly from among all the tuples which started with that prefix,
+   and using the last element of the tuple as our prediction.
+   Naturally, words which appear more frequently in the context specified should then be given more weight,
+   and words which do not appear in our corpus after the given sequence will not be chosen at all,
+   so our prediction should be a reasonable estimate for the empirical distribution.
+
+   If we instead count 5-tuples rather than 3-tuples, we can make better predictions with the greater context,
+   which will then more closely match the true sequence properties.
+   However, we will also be able to observe fewer unique 5-tuples overall than 3-tuples,
+   which will mean we need greater amounts of data to properly use a larger n-gram size.
 
 
-  Feel free to read these useful resources to better understand n-grams:
-  - https://blog.xrds.acm.org/2017/10/introduction-n-grams-need/
-  - https://web.stanford.edu/~jurafsky/slp3/slides/LM_4.pdf
-  - https://medium.com/mti-technology/n-gram-language-model-b7c2fc322799
+   Feel free to read these useful resources to better understand n-grams:
+   - https://blog.xrds.acm.org/2017/10/introduction-n-grams-need/
+   - https://web.stanford.edu/~jurafsky/slp3/slides/LM_4.pdf
+   - https://medium.com/mti-technology/n-gram-language-model-b7c2fc322799
 
-  
-  First define a module which holds our main functionality specific to a particular orderable type we'll call `Token`. 
-  These tokens could be words (strings) of course, but could also be numbers, or DNA base pairs, etc.
 
-  We also need randomness here, so we will abstract over it as well.
+   First define a module which holds our main functionality specific to a particular orderable type we'll call `Token`.
+   These tokens could be words (strings) of course, but could also be numbers, or DNA base pairs, etc.
+
+   We also need randomness here, so we will abstract over it as well.
 *)
-module N_grams (Random: Randomness) (Token: Map.Key) = struct
-
+module N_grams (Random : Randomness) (Token : Map.Key) = struct
   (*
     Define a module which is a Map satisfying the signature provided, so that sequences of tokens can be mapped to values.
   *)
-  module Token_list_map : (Map.S with type Key.t = Token.t list) = 
+  module Token_list_map : Map.S with type Key.t = Token.t list =
     Map.Make (List_key (Token))
-;;
 
   (*
     Based on how n-grams work, we will represent a probability distribution as mapping from prefixes of size `n`, 
@@ -214,7 +219,7 @@ module N_grams (Random: Randomness) (Token: Map.Key) = struct
 
     Don't change this type; it is a map from token lists to bags of tokens.
   *)
-  type distribution = (Token.t Bag.t) Token_list_map.t
+  type distribution = Token.t Bag.t Token_list_map.t
 
   (*
     Given a positive integer `n` and a list of tokens, 
@@ -254,37 +259,39 @@ module N_grams (Random: Randomness) (Token: Map.Key) = struct
           \-- this sequence...
         }
   *)
-  let ngrams (n: int) (l: Token.t list): distribution =
-    let lists = chunks n l in 
+  let ngrams (n : int) (l : Token.t list) : distribution =
+    let lists = chunks n l in
     (* build distribution by using (n-1) items in the list as key and the last item as value *)
-    let rec build_distribution (lists: Token.t list list) (d: distribution): distribution =
+    let rec build_distribution (lists : Token.t list list) (d : distribution) :
+        distribution =
       match lists with
       | [] -> d
-      | list :: rest -> 
-        let value, key = split_last list in 
-        (* find if key is in d
-          if yes, add value to the bag
-          if no, insert key to the d and create a new bag with value *)
-        let new_bag =
-          match Token_list_map.find_exn d key with
-          | bag -> let _ = Bag.add bag value in bag
-          | exception Not_found_s _ -> 
-            let new_bag = Bag.create () in
-            let _ = Bag.add new_bag value
-          in new_bag
-        in
-        let new_d = Token_list_map.set d ~key ~data:new_bag in
-        build_distribution rest new_d
-        (* use key as the key to get the bag of values from the distribution
-        let bag = Token_list_map.find_opt key d |> Option.value ~default:Bag.empty in
-        (* add the value to the bag *)
-        let new_bag = Bag.add value bag in
-        (* add the new bag to the distribution *)
-        let new_distribution = Token_list_map.add key new_bag d in
-        build_distribution rest new_distribution *)
+      | list :: rest ->
+          let value, key = split_last list in
+          (* find if key is in d
+             if yes, add value to the bag
+             if no, insert key to the d and create a new bag with value *)
+          let new_bag =
+            match Token_list_map.find_exn d key with
+            | bag ->
+                let _ = Bag.add bag value in
+                bag
+            | exception Not_found_s _ ->
+                let new_bag = Bag.create () in
+                let _ = Bag.add new_bag value in
+                new_bag
+          in
+          let new_d = Token_list_map.set d ~key ~data:new_bag in
+          build_distribution rest new_d
+      (* use key as the key to get the bag of values from the distribution
+         let bag = Token_list_map.find_opt key d |> Option.value ~default:Bag.empty in
+         (* add the value to the bag *)
+         let new_bag = Bag.add value bag in
+         (* add the new bag to the distribution *)
+         let new_distribution = Token_list_map.add key new_bag d in
+         build_distribution rest new_distribution *)
     in
     build_distribution lists Token_list_map.empty
-
 
   (*
 
@@ -295,15 +302,30 @@ module N_grams (Random: Randomness) (Token: Map.Key) = struct
     - an integer for the maximum length of sequence to generate
     - a list of tokens (of length `n-1`) to kick off the random generation and sequence (consider it a 'seed' to look up in the distribution)
 
-    It will then produce a sequence which is distributed according to the n-gram model it is given, terminating if either the resulting sequence reaches the maximum length, or when there are no observed
+    It will then produce a sequence which is distributed according to the n-gram model it is given, 
+    terminating if either the resulting sequence reaches the maximum length, or when there are no observed
     n-grams which could follow.
 
   *)
 
-  let sample_sequence (dist: distribution) ~(max_length: int) ~(initial_ngram: Token.t list): Token.t list =
-    failwith "undefined"
-  
-end (* of module N_grams *)
+  let sample_sequence (dist : distribution) ~(max_length : int)
+      ~(initial_ngram : Token.t list) : Token.t list =
+    let rec sample_sequence_helper (dist : distribution) (ngram : Token.t list)
+        (length : int) : Token.t list =
+      if length >= max_length then ngram
+      else
+        let bag = Token_list_map.find_exn dist ngram in
+        (* get a random number between 0 and bag_length *)
+        let next_token = sample (module Random) bag in
+        match next_token with
+        | Some token ->
+            let new_ngram = ngram @ [ token ] in
+            sample_sequence_helper dist new_ngram (length + 1)
+        | None -> ngram
+    in
+    sample_sequence_helper dist initial_ngram (List.length initial_ngram)
+end
+(* of module N_grams *)
 
 (*
   Exercise 6:
@@ -316,12 +338,33 @@ end (* of module N_grams *)
   if the resulting string is empty, return None.
 
 *)
-let sanitize (s: string): string option =
-  failwith "unimplemented"
+let sanitize (s : string) : string option =
+  let is_valid_char (c : char) : bool =
+    let is_alpha = Char.is_alpha c in
+    let is_digit = Char.is_digit c in
+    is_alpha || is_digit
+  in
+  let is_uppercase (c : char) : bool =
+    let is_alpha = Char.is_alpha c in
+    let is_upper = Char.is_uppercase c in
+    is_alpha && is_upper
+  in
+  (* iterate through chars in the string *)
+  let rec sanitize_helper (s : string) (i : int) (acc : string) : string =
+    if i >= String.length s then acc
+    else
+      let c = String.get s i in
+      if is_valid_char c then
+        let new_c = if is_uppercase c then Char.lowercase c else c in
+        let new_acc = acc ^ String.of_char new_c in
+        sanitize_helper s (i + 1) new_acc
+      else sanitize_helper s (i + 1) acc
+  in
+  let sanitized = sanitize_helper s 0 "" in
+  if String.length sanitized = 0 then None else Some sanitized
 
 (* See ngrams.ml for part II.
 
-For any auxiliary functions needed in part II, put them here so they can
-be unit tested.  
-
+   For any auxiliary functions needed in part II, put them here so they can
+   be unit tested.
 *)
