@@ -27,7 +27,9 @@ open Core
 (*
   Exercise 1:
 
-  Given a list of some type, and a positive integer `n`, produce a list of contiguous subsequences of length `n` of the original list. If `n` is greater than the length of the input, return an empty list.
+  Given a list of some type, and a positive integer `n`, 
+  produce a list of contiguous subsequences of length `n` of the original list. 
+  If `n` is greater than the length of the input, return an empty list.
 
   E.G.
     chunks 3 [1; 2; 3; 4; 5] =
@@ -44,7 +46,8 @@ let rec get_n_items n lst =
   | [] -> []
   | h :: t ->
       if n = 1 then [ h ]
-      else if n = 0 then failwith "n should be a positive integer"
+      else if n = 0 then []
+      else if n < 0 then failwith "n should be positive"
       else h :: get_n_items (n - 1) t
 
 let chunks (n : int) (l : 'a list) : 'a list list =
@@ -53,7 +56,7 @@ let chunks (n : int) (l : 'a list) : 'a list list =
     match l with
     | [] -> acc
     | hd :: tl ->
-        let sub_list = hd :: get_n_items (n - 1) tl in
+        let sub_list = hd :: get_n_items (n-1) tl in
         if List.length sub_list = n then chunks_helper n tl (acc @ [ sub_list ])
         else acc
   in
@@ -137,6 +140,11 @@ let sample (module R : Randomness) (b : 'a Bag.t) : 'a option =
   let len = Bag.length b in
   if len = 0 then None
   else
+    let rand_index = R.int len in
+    Bag.to_list b |> Fn.flip List.nth rand_index
+  (* let len = Bag.length b in
+  if len = 0 then None
+  else
     let index = R.int len in
     let rec sample_helper (b : 'a Bag.t) (index : int) : 'a option =
       match Bag.choose b with
@@ -148,7 +156,7 @@ let sample (module R : Randomness) (b : 'a Bag.t) : 'a option =
             let _ = Bag.remove b elt in
             sample_helper b (index - 1)
     in
-    sample_helper b index
+    sample_helper b index *)
 
 (* Exercise 5:
 
@@ -308,22 +316,44 @@ module N_grams (Random : Randomness) (Token : Map.Key) = struct
 
   *)
 
+(*   
+(* get the second to last element of the list *)
+let rec second_to_last (l : Token.t list) : Token.t =
+  match l with
+  | [] -> failwith "empty list"
+  | [x] -> x
+  | _ :: rest -> second_to_last rest *)
+
   let sample_sequence (dist : distribution) ~(max_length : int)
       ~(initial_ngram : Token.t list) : Token.t list =
-    let rec sample_sequence_helper (dist : distribution) (ngram : Token.t list)
-        (length : int) : Token.t list =
-      if length >= max_length then ngram
+      let rec sample_sequence_helper (dist : distribution) (query : Token.t list)
+        (length : int) (res: Token.t list) : Token.t list =
+      if length >= max_length then res
+      else
+        (* find the bag by the token key *)
+        let bag = Token_list_map.find_exn dist query in
+        (* get a random number between 0 and bag_length *)
+        let next_token = sample (module Random) bag in
+        match next_token with
+        | Some token ->
+          let new_query = List.tl_exn query @ [token] in
+            sample_sequence_helper dist new_query (length + 1) (res @ [ token ])
+        | None -> res
+    in
+    sample_sequence_helper dist initial_ngram (List.length initial_ngram) initial_ngram
+    (* let rec sample_sequence_helper (dist : distribution) (ngram : Token.t list)
+        (length : int) (acc: Token.t list) : Token.t list =
+      if length >= max_length then acc
       else
         let bag = Token_list_map.find_exn dist ngram in
         (* get a random number between 0 and bag_length *)
         let next_token = sample (module Random) bag in
         match next_token with
         | Some token ->
-            let new_ngram = ngram @ [ token ] in
-            sample_sequence_helper dist new_ngram (length + 1)
-        | None -> ngram
+            sample_sequence_helper dist ngram (length + 1) (ngram @ [ token ])
+        | None -> acc
     in
-    sample_sequence_helper dist initial_ngram (List.length initial_ngram)
+    sample_sequence_helper dist initial_ngram (List.length initial_ngram) initial_ngram *)
 end
 (* of module N_grams *)
 
