@@ -3,8 +3,7 @@
 FPSE Assignment 4
  
 Name                  : Shuyao Tan
-List of Collaborators :
-
+List of Collaborators : Tingyao Li
 *)
 
 open Core
@@ -56,7 +55,7 @@ let chunks (n : int) (l : 'a list) : 'a list list =
     match l with
     | [] -> acc
     | hd :: tl ->
-        let sub_list = hd :: get_n_items (n-1) tl in
+        let sub_list = hd :: get_n_items (n - 1) tl in
         if List.length sub_list = n then chunks_helper n tl (acc @ [ sub_list ])
         else acc
   in
@@ -142,21 +141,6 @@ let sample (module R : Randomness) (b : 'a Bag.t) : 'a option =
   else
     let rand_index = R.int len in
     Bag.to_list b |> Fn.flip List.nth rand_index
-  (* let len = Bag.length b in
-  if len = 0 then None
-  else
-    let index = R.int len in
-    let rec sample_helper (b : 'a Bag.t) (index : int) : 'a option =
-      match Bag.choose b with
-      | None -> None
-      | Some elt ->
-          if index = 0 then Some (Bag.Elt.value elt)
-          else
-            (* remove elt in b and pass the mutated bag b into recursive call *)
-            let _ = Bag.remove b elt in
-            sample_helper b (index - 1)
-    in
-    sample_helper b index *)
 
 (* Exercise 5:
 
@@ -282,8 +266,7 @@ module N_grams (Random : Randomness) (Token : Map.Key) = struct
           let new_bag =
             match Token_list_map.find_exn d key with
             | bag ->
-                let _ = Bag.add bag value in
-                bag
+                let _ = Bag.add bag value in bag
             | exception Not_found_s _ ->
                 let new_bag = Bag.create () in
                 let _ = Bag.add new_bag value in
@@ -291,13 +274,6 @@ module N_grams (Random : Randomness) (Token : Map.Key) = struct
           in
           let new_d = Token_list_map.set d ~key ~data:new_bag in
           build_distribution rest new_d
-      (* use key as the key to get the bag of values from the distribution
-         let bag = Token_list_map.find_opt key d |> Option.value ~default:Bag.empty in
-         (* add the value to the bag *)
-         let new_bag = Bag.add value bag in
-         (* add the new bag to the distribution *)
-         let new_distribution = Token_list_map.add key new_bag d in
-         build_distribution rest new_distribution *)
     in
     build_distribution lists Token_list_map.empty
 
@@ -316,46 +292,39 @@ module N_grams (Random : Randomness) (Token : Map.Key) = struct
 
   *)
 
-(*   
-(* get the second to last element of the list *)
-let rec second_to_last (l : Token.t list) : Token.t =
-  match l with
-  | [] -> failwith "empty list"
-  | [x] -> x
-  | _ :: rest -> second_to_last rest *)
 
   let sample_sequence (dist : distribution) ~(max_length : int)
       ~(initial_ngram : Token.t list) : Token.t list =
-      let rec sample_sequence_helper (dist : distribution) (query : Token.t list)
-        (length : int) (res: Token.t list) : Token.t list =
+    let rec sample_sequence_helper (dist : distribution) (query : Token.t list)
+        (length : int) (res : Token.t list) : Token.t list =
       if length >= max_length then res
       else
-        (* find the bag by the token key *)
-        let bag = Token_list_map.find_exn dist query in
-        (* get a random number between 0 and bag_length *)
-        let next_token = sample (module Random) bag in
-        match next_token with
-        | Some token ->
-          let new_query = List.tl_exn query @ [token] in
-            sample_sequence_helper dist new_query (length + 1) (res @ [ token ])
-        | None -> res
+        (* Find the bag by the token key.
+           If bag is not exception then get sample else catch by returning initial_ngram *)
+        try
+          (* get a random number between 0 and bag_length *)
+          let bag = Token_list_map.find_exn dist query in
+          let next_token = sample (module Random) bag in
+          match next_token with
+          | Some token ->
+              let new_query =
+                if List.is_empty query then [ token ]
+                else List.tl_exn query @ [ token ]
+              in
+              sample_sequence_helper dist new_query (length + 1)
+                (res @ [ token ])
+          | None -> res
+        with _ -> res
     in
-    sample_sequence_helper dist initial_ngram (List.length initial_ngram) initial_ngram
-    (* let rec sample_sequence_helper (dist : distribution) (ngram : Token.t list)
-        (length : int) (acc: Token.t list) : Token.t list =
-      if length >= max_length then acc
-      else
-        let bag = Token_list_map.find_exn dist ngram in
-        (* get a random number between 0 and bag_length *)
-        let next_token = sample (module Random) bag in
-        match next_token with
-        | Some token ->
-            sample_sequence_helper dist ngram (length + 1) (ngram @ [ token ])
-        | None -> acc
-    in
-    sample_sequence_helper dist initial_ngram (List.length initial_ngram) initial_ngram *)
+    if List.length initial_ngram < max_length then
+    sample_sequence_helper dist initial_ngram
+      (List.length initial_ngram)
+      initial_ngram
+    else sample_sequence_helper dist initial_ngram
+    (max_length)
+    (* take the first max_length elements of initial_ngram *)
+    (List.slice initial_ngram 0 max_length)
 end
-(* of module N_grams *)
 
 (*
   Exercise 6:
@@ -398,3 +367,95 @@ let sanitize (s : string) : string option =
    For any auxiliary functions needed in part II, put them here so they can
    be unit tested.
 *)
+module R = Random
+module NGrams = N_grams (R) (String)
+let split_on_whitespace s =
+  let is_whitespace char = 
+    match char with
+    | ' ' | '\n' | '\t' -> true
+    | _ -> false
+  in
+  (* split if is_whitespace char is True *)
+  let rec split_on_whitespace' s acc cur_string =
+    match s with
+    | "" -> if (String.length cur_string = 0) then acc else acc @ [cur_string]
+    | _ -> 
+      let c = String.get s 0 in
+      if is_whitespace c then
+        split_on_whitespace' (String.sub s ~pos:1 ~len:(String.length s - 1)) (acc@[cur_string]) ""
+      else
+        split_on_whitespace' (String.sub s ~pos:1 ~len:(String.length s - 1)) acc (cur_string ^ (String.make 1 c))
+  in
+  split_on_whitespace' s [] ""
+
+
+let rec get_sanitized str_list = 
+  match str_list with
+  | [] -> []
+  | hd::tl -> 
+    match sanitize hd with
+    | None -> get_sanitized tl
+    | Some s -> s::(get_sanitized tl)
+
+
+(* let get_random_init_words str_list key_count = 
+  (* repeat to add random string from str_list to list for key_count times *)
+  let rec get_random_init_words' str_list key_count acc = 
+    if key_count > 0 
+      then (let len = List.length str_list in
+            let rand = Random.int len in
+            get_random_init_words' str_list (key_count - 1) (acc @ [List.nth_exn str_list rand]))
+  else acc
+  in
+  get_random_init_words' str_list key_count [] *)
+
+let get_random_init_words dist =
+  let key_list = NGrams.Token_list_map.keys dist in
+  let len = List.length key_list in
+  let rand = Random.int len in
+  let key = List.nth_exn key_list rand in
+  List.append key []
+
+
+let count_word (value_list: 'a list): (('a * int) list) = 
+  let rec count_word_helper value_list acc = 
+    (* count the occurrence of value in value_list *)
+    match value_list with
+    | [] -> acc
+    | hd::tl -> 
+      (* find a tuple in acc with first element equal to hd *)
+      match List.find_exn acc ~f:(fun (x, _) -> String.(x=hd)) with 
+      | (x, y) -> count_word_helper tl ((x, y + 1)::(List.filter acc ~f:(fun (x, _) -> String.(x<>hd))))
+      | exception Not_found_s _ -> count_word_helper tl ((hd, 1)::acc)
+    in count_word_helper value_list []
+
+
+let generate_freq_list key value = 
+  let value_count_tuple = count_word value in
+  let rec generate_freq_list_helper key value_count_tuple res = 
+  match value_count_tuple with
+  | [] -> res
+  | hd::tl -> 
+    (* convert key to list *)
+    let word, freq = hd in
+    generate_freq_list_helper key tl (res@[(key @ [word], freq)])
+    (* generate_freq_list_helper key tl (res @ [(key, word)]) *)
+in generate_freq_list_helper key value_count_tuple []
+
+
+let iter_token_list_map distribution = 
+  let dist_list = NGrams.Token_list_map.to_alist distribution in
+  let rec iter_token_list_map_helper dist_list acc =
+    match dist_list with 
+    | [] -> acc
+    | hd::tl -> 
+      let (key, value_in_bag) = hd in
+      let value = Bag.to_list value_in_bag in
+      let freq_list = generate_freq_list key value
+    in iter_token_list_map_helper tl (acc@freq_list)
+    in let value_count_tuple = iter_token_list_map_helper dist_list [] in
+    List.sort value_count_tuple ~compare:(fun (x1, x) (y1, y) -> 
+      if Int.compare y x = 0 then 
+        String.compare (String.concat ~sep:" " x1) (String.concat ~sep:" " y1)
+      else Int.compare y x)
+      
