@@ -1,2 +1,10 @@
 ; Fill in this file.
 ;
+
+(test
+ (name tests)
+ (libraries core ounit2 lib)
+ (preprocess (pps ppx_jane)
+ 
+ )
+)

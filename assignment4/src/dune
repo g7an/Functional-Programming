@@ -2,11 +2,18 @@
   (name lib)
   (modules lib)
   (libraries 
-    core))
+    core)
+  (preprocess
+  (pps bisect_ppx)) 
+    )
 
 (executable
   (name ngrams)
   (modules ngrams)
   (libraries
     lib
-    core))
+    core 
+    core_unix.filename_unix
+    core_unix.command_unix)
+  (preprocess (pps ppx_let ppx_deriving_yojson))  
+)
